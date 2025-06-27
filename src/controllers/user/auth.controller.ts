@@ -148,3 +148,103 @@ export async function userLogout(req: Request, res: Response): Promise<void> {
 
 
 
+
+
+/**
+ * @route   POST /api/auth/verify-email
+ * @desc    Verifies the 6-digit code sent to user's email
+ * @access  Public
+ */
+export async function verifyEmail(req: Request, res: Response): Promise<void> {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+        res.status(400).json({ success: false, message: "Email and code are required." });
+        return;
+    }
+
+    try {
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            res.status(404).json({ success: false, message: "User not found." });
+            return;
+        }
+
+        if (user.verificationCode !== code) {
+            res.status(400).json({ success: false, message: "Invalid or expired verification code." });
+            return;
+        }
+
+        // Mark user as verified and clear code
+        user.isVerified = true;
+        user.verificationCode = undefined;
+        await user.save();
+
+        res.status(200).json({ success: true, message: "Email verified successfully." });
+    } catch (error) {
+        console.error("Verification error:", error);
+        res.status(500).json({ success: false, message: "Failed to verify email." });
+    }
+}
+
+
+
+
+
+
+
+
+/**
+ * @route   POST /api/auth/resend-otp
+ * @desc    Resends a 6-digit email verification code to the authenticated user
+ * @access  Private
+ */
+export async function resendEmailOtp(req: Request, res: Response): Promise<void> {
+
+    type EmailType = {
+        email: string
+    }
+
+  const {email} = req.body as EmailType
+
+  if (!email) {
+    res.status(401).json({ success: false, message: "Unauthorized. Please login first." });
+    return;
+  }
+
+  try {
+    const user = await User.findOne({email: email});
+
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found." });
+      return;
+    }
+
+    if (user.isVerified) {
+      res.status(400).json({ success: false, message: "Email is already verified." });
+      return;
+    }
+
+    // Generate new 6-digit code
+    const newCode = Math.floor(100000 + Math.random() * 900000);
+
+    // Update user with new code and expiry (15 minutes)
+    user.verificationCode = newCode;
+    await user.save();
+    await sendEmail(email, newCode)
+
+    res.status(200).json({
+      success: true,
+      message: "Verification code resent to your email.",
+    });
+  } catch (error) {
+    console.error("Resend OTP error:", error);
+    res.status(500).json({ success: false, message: "Failed to resend verification code." });
+  }
+}
+
+
+
+
+

@@ -10,7 +10,7 @@ export interface UserDocument extends Document {
     phoneNo: string;
     password: string;
     isVerified: boolean;
-    verificationCode: number;
+    verificationCode: number | undefined;
     createdAt: Date;
     updatedAt: Date;
 }
