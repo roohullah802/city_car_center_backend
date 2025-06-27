@@ -6,6 +6,8 @@ import { User } from '../../models/user.model'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { sendEmail } from '../../lib/mail/nodemailer'
+import { loginSchema } from '../../lib/zod/zod.login'
+import { resetPassSchema } from '../../lib/zod/zod.resetPass'
 
 
 
@@ -76,7 +78,19 @@ export async function userSignup(req: Request, res: Response): Promise<void> {
  * @access  Public
  **/
 export async function userLogin(req: Request, res: Response): Promise<void> {
-    const { email, password } = req.body;
+    const parsed = loginSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+        res.status(400).json({
+            success: false,
+            message: 'Validation error',
+            errors: parsed.error.flatten().fieldErrors,
+        });
+        return;
+    }
+
+    const {email, password } = parsed.data;
+
 
     if (!email || !password) {
         res.status(400).json({ success: false, message: "Email and password are required." });
@@ -257,7 +271,13 @@ export async function resendEmailOtp(req: Request, res: Response): Promise<void>
  * @access  Public
  */
 export async function forgotPassword(req: Request, res: Response): Promise<void> {
-    const { email } = req.body;
+
+    type Email = {
+        email: string
+    }
+
+
+    const { email } = req.body as Email
 
     if (!email) {
         res.status(400).json({ success: false, message: "Email is required." });
@@ -299,12 +319,19 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
  * @access  Public
  */
 export async function resetPassword(req: Request, res: Response): Promise<void> {
-    type VerifyType = {
-        email: string,
-        newPassword: string,
-        reNewPassword: string
+    const parsed = resetPassSchema.safeParse(req.body)
+
+    if (!parsed.success) {
+        res.status(400).json({
+            success: false,
+            message: 'Validation error',
+            errors: parsed.error.flatten().fieldErrors,
+        });
+        return;
     }
-    const { email, newPassword, reNewPassword } = req.body as VerifyType
+
+    const {email, newPassword, reNewPassword } = parsed.data;
+
 
     if (newPassword !== reNewPassword) {
         res.status(400).json({ success: false, message: "please enter correct password!" });
