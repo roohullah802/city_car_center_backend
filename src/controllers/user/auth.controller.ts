@@ -206,45 +206,136 @@ export async function resendEmailOtp(req: Request, res: Response): Promise<void>
         email: string
     }
 
-  const {email} = req.body as EmailType
+    const { email } = req.body as EmailType
 
-  if (!email) {
-    res.status(401).json({ success: false, message: "Unauthorized. Please login first." });
-    return;
-  }
-
-  try {
-    const user = await User.findOne({email: email});
-
-    if (!user) {
-      res.status(404).json({ success: false, message: "User not found." });
-      return;
+    if (!email) {
+        res.status(401).json({ success: false, message: "Unauthorized. Please login first." });
+        return;
     }
 
-    if (user.isVerified) {
-      res.status(400).json({ success: false, message: "Email is already verified." });
-      return;
+    try {
+        const user = await User.findOne({ email: email });
+
+        if (!user) {
+            res.status(404).json({ success: false, message: "User not found." });
+            return;
+        }
+
+        if (user.isVerified) {
+            res.status(400).json({ success: false, message: "Email is already verified." });
+            return;
+        }
+
+        // Generate new 6-digit code
+        const newCode = Math.floor(100000 + Math.random() * 900000);
+
+        // Update user with new code and expiry (15 minutes)
+        user.verificationCode = newCode;
+        await user.save();
+        await sendEmail(email, newCode)
+
+        res.status(200).json({
+            success: true,
+            message: "Verification code resent to your email.",
+        });
+    } catch (error) {
+        console.error("Resend OTP error:", error);
+        res.status(500).json({ success: false, message: "Failed to resend verification code." });
     }
-
-    // Generate new 6-digit code
-    const newCode = Math.floor(100000 + Math.random() * 900000);
-
-    // Update user with new code and expiry (15 minutes)
-    user.verificationCode = newCode;
-    await user.save();
-    await sendEmail(email, newCode)
-
-    res.status(200).json({
-      success: true,
-      message: "Verification code resent to your email.",
-    });
-  } catch (error) {
-    console.error("Resend OTP error:", error);
-    res.status(500).json({ success: false, message: "Failed to resend verification code." });
-  }
 }
 
 
 
 
 
+
+
+
+/**
+ * @route   POST /api/auth/forgot-password
+ * @desc    Initiates forgot password process by generating a reset token and sending it to user's email
+ * @access  Public
+ */
+export async function forgotPassword(req: Request, res: Response): Promise<void> {
+    const { email } = req.body;
+
+    if (!email) {
+        res.status(400).json({ success: false, message: "Email is required." });
+        return;
+    }
+
+    try {
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            res.status(200).json({ success: true, message: "If the email exists, a reset link has been sent." });
+            return;
+        }
+
+
+        const newCode = Math.floor(100000 + Math.random() * 900000);
+
+
+        user.verificationCode = newCode;
+        await user.save();
+        await sendEmail(email, newCode)
+
+        res.status(200).json({ success: true, message: "verification code successfully sent to your email" });
+    } catch (error) {
+        console.error("Forgot Password error:", error);
+        res.status(500).json({ success: false, message: "Failed to process password reset request." });
+    }
+}
+
+
+
+
+
+
+
+/**
+ * @route   POST /api/auth/reset-password
+ * @desc    Resets user's password using email
+ * @access  Public
+ */
+export async function resetPassword(req: Request, res: Response): Promise<void> {
+    type VerifyType = {
+        email: string,
+        newPassword: string,
+        reNewPassword: string
+    }
+    const { email, newPassword, reNewPassword } = req.body as VerifyType
+
+    if (newPassword !== reNewPassword) {
+        res.status(400).json({ success: false, message: "please enter correct password!" });
+        return;
+    }
+
+    if (!email || !newPassword || !reNewPassword) {
+        res.status(400).json({ success: false, message: "Email, token, and new password are required." });
+        return;
+    }
+
+    try {
+        // Find user by email and valid reset token
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            res.status(400).json({ success: false, message: "Invalid or expired password reset token." });
+            return;
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password and clear reset token fields
+        user.password = hashedPassword;
+        user.verificationCode = undefined;
+        await user.save();
+
+        res.status(200).json({ success: true, message: "Password has been reset successfully." });
+    } catch (error) {
+        console.error("Reset Password error:", error);
+        res.status(500).json({ success: false, message: "Failed to reset password." });
+    }
+}
