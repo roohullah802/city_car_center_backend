@@ -19,6 +19,7 @@ import { resetPassSchema } from '../../lib/zod/zod.resetPass'
  * @access  Public
  */
 export async function userSignup(req: Request, res: Response): Promise<void> {
+    ``
     try {
         // ✅ Validate input
         const parsed = signupSchema.safeParse(req.body);
@@ -49,8 +50,11 @@ export async function userSignup(req: Request, res: Response): Promise<void> {
             phoneNo,
             password,
         });
+        const code = Math.floor(100000 + Math.random() * 900000);
 
+        user.verificationCode = code
         await user.save();
+        await sendEmail(email, code)
 
         res.status(201).json({
             success: true,
@@ -89,7 +93,7 @@ export async function userLogin(req: Request, res: Response): Promise<void> {
         return;
     }
 
-    const {email, password } = parsed.data;
+    const { email, password } = parsed.data;
 
 
     if (!email || !password) {
@@ -110,7 +114,6 @@ export async function userLogin(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const code = Math.floor(100000 + Math.random() * 900000);
 
         const token = jwt.sign(
             { userId: user._id, email: user.email },
@@ -129,9 +132,7 @@ export async function userLogin(req: Request, res: Response): Promise<void> {
                 phoneNo: user.phoneNo,
             },
         });
-        user.verificationCode = code
         await user.save()
-        await sendEmail(email, code)
     } catch (error) {
         console.error("Login error:", error);
         res.status(500).json({ success: false, message: "Server error. Please try again later." });
@@ -310,6 +311,29 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
 
 
 
+export async function matchOtp(req: Request, res: Response): Promise<void> {
+    const { email, code } = req.body
+
+    if (!email || !code) {
+        res.status(400).json({ success: false, message: "verification code and email is required" })
+        return;
+    }
+    const user = await User.findOne({ email: email })
+    if (!user) {
+        res.status(400).json({ success: false, message: "user not found" })
+        return;
+    }
+
+    if (user.verificationCode !== code) {
+        res.status(400).json({ success: false, message: "password is not matched" })
+        return;
+    }
+
+    res.status(200).json({ success: false, message: "password matched successfully" })
+
+}
+
+
 
 
 
@@ -330,7 +354,7 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
         return;
     }
 
-    const {email, newPassword, reNewPassword } = parsed.data;
+    const { email, newPassword, reNewPassword } = parsed.data;
 
 
     if (newPassword !== reNewPassword) {

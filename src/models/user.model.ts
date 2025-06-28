@@ -24,7 +24,6 @@ const userSchema = new Schema<UserDocument>(
         },
         lastName: {
             type: String,
-            required: true,
             trim: true,
         },
         email: {
@@ -50,16 +49,15 @@ const userSchema = new Schema<UserDocument>(
         },
         verificationCode: {
             type: Number,
-            required: true
         }
     },
     {
-        timestamps: true, // Automatically adds createdAt and updatedAt
+        timestamps: true,
     }
 );
 
 userSchema.pre<UserDocument>("save", async function (next): Promise<void> {
-    if (!this.isModified(this.password)) return next()
+    if (!this.isModified('password')) return next()
 
     const hashedPassword = await bcrypt.hash(this.password, 10)
     this.password = hashedPassword
