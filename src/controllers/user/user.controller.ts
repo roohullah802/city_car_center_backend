@@ -219,6 +219,7 @@ export async function createLease(req: Request, res: Response): Promise<void> {
             startDate: start,
             endDate: end,
             totalAmount,
+            returnedDate: end,
             status: 'pending',
         });
 
@@ -239,6 +240,9 @@ export async function createLease(req: Request, res: Response): Promise<void> {
                 leaseId: String(lease._id)
             }
         });
+
+        lease.paymentId = intent.id
+        await lease.save()
 
         res.status(201).json({
             success: true,
@@ -347,6 +351,8 @@ export async function extendLease(req: Request, res: Response): Promise<void> {
         // ✅ Update lease (optional pre-update)
         lease.endDate = newEndDate;
         lease.status = 'pending'; // Wait until payment confirmation
+        lease.returnedDate = newEndDate
+        await Lease.updateOne({paymentId: lease.paymentId}, {paymentId: paymentIntent.id})
         await lease.save();
 
         res.status(200).json({
@@ -406,6 +412,7 @@ export async function getPaymentDetails(req: Request, res: Response): Promise<vo
                 message: 'No lease history found.',
                 data: {
                     totalLeases: 0,
+                    totalPending: 0,
                     totalPaid: 0,
                     totalCancelled: 0,
                     totalAmountPaid: 0,
@@ -418,6 +425,7 @@ export async function getPaymentDetails(req: Request, res: Response): Promise<vo
 
         const totalPaid = leases.filter(l => l.status === 'completed').length;
         const totalCancelled = leases.filter(l => l.status === 'cancel').length;
+        const totalPending = leases.filter(l => l.status === 'pending').length;
         const totalAmountPaid = leases
             .filter(l => l.status === 'completed')
             .reduce((sum, l) => sum + (l.totalAmount || 0), 0);
@@ -428,6 +436,7 @@ export async function getPaymentDetails(req: Request, res: Response): Promise<vo
             data: {
                 totalLeases: leases.length,
                 totalPaid,
+                totalPending,
                 totalCancelled,
                 totalAmountPaid,
                 leases: leases,

@@ -10,6 +10,7 @@ const leaseSchema = new Schema<LeaseDocument>(
     totalAmount: { type: Number, required: true },
     isReturned: { type: Boolean, default: false },
     returnedDate: { type: Date },
+    paymentId:[{type: String}],
     status: {
       type: String,
       enum: ['pending', 'completed', 'cancel'],
