@@ -491,7 +491,6 @@ export async function returnCar(req: Request, res: Response): Promise<void> {
     }
 
     lease.isReturned = true;
-    lease.status = 'returned';
     lease.returnedDate = new Date();
 
     await lease.save();

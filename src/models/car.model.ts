@@ -1,6 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import {CarDocument} from '../types/car.types'
+import { CarDocument } from '../types/car.types'
 
+
+const imageSchema = new mongoose.Schema({
+  url: { type: String, required: true },
+  public_id: { type: String, required: true },
+});
 
 const carSchema = new Schema<CarDocument>(
   {
@@ -21,7 +26,6 @@ const carSchema = new Schema<CarDocument>(
     pricePerDay: { type: Number, required: true },
     initialMileage: { type: Number, required: true },
     allowedMilleage: { type: Number, required: true },
-    brandImage: [{type: String}],
     fuelType: {
       type: String,
       enum: ['Petrol', 'Diesel', 'Electric', 'Hybrid'],
@@ -33,7 +37,9 @@ const carSchema = new Schema<CarDocument>(
       required: true,
     },
     description: { type: String },
-    images: [{ type: String }],
+    images: [imageSchema],
+    brandImage: imageSchema,
+
   },
   { timestamps: true }
 );
