@@ -8,6 +8,8 @@ export interface LeaseDocument extends Document {
     endDate: Date;
     totalAmount: number;
     status: string;
+    isReturned: boolean;
+    returnedDate: Date;
     createdAt: Date;
     updatedAt: Date;
   }

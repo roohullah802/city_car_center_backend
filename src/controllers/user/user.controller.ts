@@ -151,7 +151,7 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
  */
 export async function createLease(req: Request, res: Response): Promise<void> {
     const userId = req.user?.userId
-    
+
 
     if (!userId) {
         res.status(401).json({
@@ -211,7 +211,7 @@ export async function createLease(req: Request, res: Response): Promise<void> {
 
         const totalAmount = car.pricePerDay * 7;
         console.log(totalAmount);
-        
+
 
         const lease = await Lease.create({
             user: new mongoose.Types.ObjectId(userId),
@@ -223,7 +223,7 @@ export async function createLease(req: Request, res: Response): Promise<void> {
         });
 
         // Optionally mark car unavailable
-        await Car.updateOne({"_id": carId}, {"available": false})
+        await Car.updateOne({ "_id": carId }, { "available": false })
 
         const stripe = new Stripe(process.env.STRIPE_SERVER_KEY! as string, {
             apiVersion: '2025-05-28.basil',
@@ -267,12 +267,13 @@ export async function createLease(req: Request, res: Response): Promise<void> {
  * @access  Private
  */
 export async function extendLease(req: Request, res: Response): Promise<void> {
-    const { additionalDays } = req.body;
+    type Days = { additionalDays: number }
+    const { additionalDays } = req.body as Days;
     const leaseId = req.params.id as string;
     const userId = req.user?.userId as string;
 
     // ✅ Validate inputs
-    if (!leaseId || typeof additionalDays !== 'number' || additionalDays <= 0) {
+    if (!leaseId || !additionalDays || additionalDays <= 0) {
         res.status(400).json({
             success: false,
             message: 'Valid leaseId and additionalDays are required.',
@@ -282,7 +283,7 @@ export async function extendLease(req: Request, res: Response): Promise<void> {
 
     try {
         // ✅ Fetch lease
-        const lease = await Lease.findById(leaseId).populate('cars');
+        const lease = await Lease.findById(leaseId).populate('car');
 
         if (!lease) {
             res.status(404).json({
@@ -308,10 +309,25 @@ export async function extendLease(req: Request, res: Response): Promise<void> {
         const newEndDate = new Date(oldEndDate);
         newEndDate.setDate(newEndDate.getDate() + additionalDays);
 
+        // ✅ Check if lease has exactly 1 day left
+        const now = new Date();
+        const oneDayInMs = 24 * 60 * 60 * 1000;
+        const timeLeft = new Date(lease.endDate).getTime() - now.getTime();
+
+        if (timeLeft > oneDayInMs || timeLeft < 0) {
+            res.status(400).json({
+                success: false,
+                message: 'Lease can only be extended when 1 day is remaining.',
+            });
+            return;
+        }
+
+
 
         const dailyRate = car.pricePerDay;
         const totalAmount = dailyRate * additionalDays * 100; // Stripe expects cents
 
+        console.log(totalAmount);
 
         const stripe = new Stripe(process.env.STRIPE_SERVER_KEY! as string, {
             apiVersion: '2025-05-28.basil',

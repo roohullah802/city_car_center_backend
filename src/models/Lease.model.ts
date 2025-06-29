@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import {LeaseDocument} from '../types/lease.types'
+import { LeaseDocument } from '../types/lease.types'
 
 const leaseSchema = new Schema<LeaseDocument>(
   {
@@ -8,6 +8,8 @@ const leaseSchema = new Schema<LeaseDocument>(
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
     totalAmount: { type: Number, required: true },
+    isReturned: { type: Boolean, default: false },
+    returnedDate: { type: Date },
     status: {
       type: String,
       enum: ['pending', 'completed', 'cancel'],

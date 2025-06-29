@@ -37,7 +37,8 @@ export async function webhookHandler(req: Request, res: Response): Promise<void>
                 available: false
             }, { new: true })
             await Lease.findByIdAndUpdate(intent.metadata?.leaseId, {
-                status: "completed"
+                status: "completed",
+                isReturned: false
             }, { new: true })
             break;
 
@@ -63,6 +64,9 @@ export async function webhookHandler(req: Request, res: Response): Promise<void>
             const createdIntent = event.data.object as Stripe.PaymentIntent;
             await Lease.findByIdAndUpdate(createdIntent.metadata?.leaseId, {
                 status: "pending"
+            }, { new: true })
+            await Car.findByIdAndUpdate(createdIntent.metadata?.carId, {
+                available: false
             }, { new: true })
             break;
 
