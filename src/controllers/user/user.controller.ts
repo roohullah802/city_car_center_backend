@@ -386,6 +386,7 @@ export async function extendLease(req: Request, res: Response): Promise<void> {
 
 
 
+
 /**
  * @route   GET /api/payment/history
  * @desc    Get logged-in user's lease payment history
@@ -450,4 +451,62 @@ export async function getPaymentDetails(req: Request, res: Response): Promise<vo
             message: 'Server error while fetching payment history.',
         });
     }
+}
+
+
+
+
+
+
+/**
+ * @route   POST /lease/:id/return
+ * @desc    Allows a user to return a leased car
+ * @access  Protected (requires authentication)
+ */
+export async function returnCar(req: Request, res: Response): Promise<void> {
+  const leaseId = req.params.id;
+  const userId = req.user?.userId;
+
+  if (!leaseId || !userId) {
+    res.status(400).json({ success: false, message: 'Lease ID and user authentication required.' });
+    return;
+  }
+
+  try {
+    const lease = await Lease.findById(leaseId);
+
+    if (!lease) {
+      res.status(404).json({ success: false, message: 'Lease not found.' });
+      return;
+    }
+
+    if (lease.user.toString() !== userId) {
+      res.status(403).json({ success: false, message: 'You are not authorized to return this car.' });
+      return;
+    }
+
+    if (lease.isReturned) {
+      res.status(400).json({ success: false, message: 'Car already returned.' });
+      return;
+    }
+
+    lease.isReturned = true;
+    lease.status = 'returned';
+    lease.returnedDate = new Date();
+
+    await lease.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Car successfully returned.',
+      lease: {
+        id: lease._id,
+        returnedAt: lease.returnedDate,
+        status: lease.status,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error returning car:', error);
+    res.status(500).json({ success: false, message: 'Server error while returning car.' });
+  }
 }
