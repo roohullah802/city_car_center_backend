@@ -21,15 +21,15 @@ const carSchema = new Schema<CarDocument>(
     pricePerDay: { type: Number, required: true },
     initialMileage: { type: Number, required: true },
     allowedMilleage: { type: Number, required: true },
-    brandImage: {type: String, required: true},
+    brandImage: [{type: String}],
     fuelType: {
       type: String,
-      enum: ['petrol', 'diesel', 'electric', 'hybrid'],
+      enum: ['Petrol', 'Diesel', 'Electric', 'Hybrid'],
       required: true,
     },
     transmission: {
       type: String,
-      enum: ['manual', 'automatic'],
+      enum: ['Manual', 'Automatic'],
       required: true,
     },
     description: { type: String },

@@ -5,9 +5,10 @@ import { connectDB } from './src/db/mongodb'
 import cors from 'cors'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser';
-import {userAuthRouter} from './src/routers/user/auth.router'
-import { authMiddleware } from './src/middleware/auth.middleware';
-import {webhookHandler} from './src/lib/webhook'
+import { userAuthRouter } from './src/routers/user/auth.router'
+import { userRouter } from './src/routers/user/user.router'
+import {adminRouter} from './src/routers/admin/admin.router'
+import { webhookHandler } from './src/lib/webhook'
 dotenv.config();
 
 
@@ -27,12 +28,14 @@ const corsOptions = {
 
 
 app.use(cors(corsOptions))
-app.use(express.json());
 app.use(cookieParser())
+app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/api/user/auth", userAuthRouter)
-app.post('/api/payment/webhook', bodyParser.raw({ type: 'application/json' }),  webhookHandler);
+app.use("/api/user", userRouter)
+app.use("/api/admin", adminRouter)
+app.post('/api/payment/webhook', bodyParser.raw({ type: 'application/json' }), webhookHandler);
 
 
 

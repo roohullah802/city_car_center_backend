@@ -74,13 +74,17 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
 
 
 
+
+
 /**
  * @route   GET /api/cars
  * @desc    Fetch all available cars
  * @access  Protected (requires authenticated user)
  */
 export async function getAllCars(req: Request, res: Response): Promise<void> {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
+
+
 
     if (!userId) {
         res.status(401).json({
@@ -107,9 +111,6 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
                 $addFields: {
                     totalReviews: { $size: "$reviews_data" }
                 }
-            },
-            {
-                $unwind: "$reviews_data"
             }
         ])
 
@@ -141,108 +142,287 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
 
 
 
+
+
 /**
  * @route   POST /api/lease
  * @desc    Create a new lease agreement for a car
  * @access  Protected (requires authenticated user)
  */
 export async function createLease(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.id;
+    const userId = req.user?.userId
+    
 
-  if (!userId) {
-    res.status(401).json({
-      success: false,
-      message: 'Unauthorized. Please log in to create a lease.',
-    });
-    return;
-  }
-
-  const { carId, startDate, endDate } = req.body;
-
-  if (!carId || !startDate || !endDate) {
-    res.status(400).json({
-      success: false,
-      message: 'carId, startDate, and endDate are required.',
-    });
-    return;
-  }
-
-  try {
-    const car = await Car.findById(carId);
-
-    if (!car) {
-      res.status(404).json({
-        success: false,
-        message: 'Car not found.',
-      });
-      return;
+    if (!userId) {
+        res.status(401).json({
+            success: false,
+            message: 'Unauthorized. Please log in to create a lease.',
+        });
+        return;
     }
 
-    if (!car.available) {
-      res.status(400).json({
-        success: false,
-        message: 'This car is currently not available for lease.',
-      });
-      return;
+    type DateType = {
+        startDate: string,
+        endDate: string
     }
 
-    // Enforce 7-day lease only
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const dayDifference = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const { startDate, endDate } = req.body as DateType;
+    const carId = req.params?.id as string
 
-    if (dayDifference !== 7) {
-      res.status(400).json({
-        success: false,
-        message: 'The first lease must be exactly 7 days long.',
-      });
-      return;
+    if (!carId || !startDate || !endDate) {
+        res.status(400).json({
+            success: false,
+            message: 'carId, startDate, and endDate are required.',
+        });
+        return;
     }
 
-    const totalAmount = car.pricePerDay * 7;
+    try {
+        const car = await Car.findById(carId);
 
-    const lease = await Lease.create({
-      user: new mongoose.Schema.Types.ObjectId(userId),
-      car: new mongoose.Schema.Types.ObjectId(carId),
-      startDate: start,
-      endDate: end,
-      totalAmount,
-      status: 'pending',
-    });
-
-    // Optionally mark car unavailable
-    car.available = false;
-    await car.save();
-
-    const stripe = new Stripe(process.env.STRIPE_SERVER_KEY! as string, {
-        apiVersion: '2025-05-28.basil',
-      });
-
-      const intent = await stripe.paymentIntents.create({
-        amount: Math.round(totalAmount * 100),
-        currency: "usd",
-        payment_method_types: ['card'],
-        metadata:{
-            carId: carId,
-            userId: userId,
-            leaseId: String(lease._id)
+        if (!car) {
+            res.status(404).json({
+                success: false,
+                message: 'Car not found.',
+            });
+            return;
         }
-      });
 
-    res.status(201).json({
-      success: true,
-      message: 'Lease created successfully for 7 days.',
-      data: lease,
-      client_secret: intent.client_secret
-    });
-  } catch (error) {
-    console.error('Lease creation error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error while creating lease.',
-    });
-  }
+        if (!car.available) {
+            res.status(400).json({
+                success: false,
+                message: 'This car is currently not available for lease.',
+            });
+            return;
+        }
+
+        // Enforce 7-day lease only
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const dayDifference = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (dayDifference !== 7) {
+            res.status(400).json({
+                success: false,
+                message: 'The first lease must be exactly 7 days long.',
+            });
+            return;
+        }
+
+        const totalAmount = car.pricePerDay * 7;
+        console.log(totalAmount);
+        
+
+        const lease = await Lease.create({
+            user: new mongoose.Types.ObjectId(userId),
+            car: new mongoose.Types.ObjectId(carId),
+            startDate: start,
+            endDate: end,
+            totalAmount,
+            status: 'pending',
+        });
+
+        // Optionally mark car unavailable
+        await Car.updateOne({"_id": carId}, {"available": false})
+
+        const stripe = new Stripe(process.env.STRIPE_SERVER_KEY! as string, {
+            apiVersion: '2025-05-28.basil',
+        });
+
+        const intent = await stripe.paymentIntents.create({
+            amount: Math.round(totalAmount * 100),
+            currency: "usd",
+            payment_method_types: ['card'],
+            metadata: {
+                carId: carId,
+                userId: userId,
+                leaseId: String(lease._id)
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Lease created successfully for 7 days.',
+            data: lease,
+            client_secret: intent.client_secret
+        });
+    } catch (error) {
+        console.error('Lease creation error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error while creating lease.',
+        });
+    }
 }
 
 
 
+
+
+
+
+/**
+ * @route   POST /api/lease/extend
+ * @desc    Extend a lease by additional days and initiate payment
+ * @access  Private
+ */
+export async function extendLease(req: Request, res: Response): Promise<void> {
+    const { additionalDays } = req.body;
+    const leaseId = req.params.id as string;
+    const userId = req.user?.userId as string;
+
+    // ✅ Validate inputs
+    if (!leaseId || typeof additionalDays !== 'number' || additionalDays <= 0) {
+        res.status(400).json({
+            success: false,
+            message: 'Valid leaseId and additionalDays are required.',
+        });
+        return;
+    }
+
+    try {
+        // ✅ Fetch lease
+        const lease = await Lease.findById(leaseId).populate('cars');
+
+        if (!lease) {
+            res.status(404).json({
+                success: false,
+                message: 'Lease not found.',
+            });
+            return;
+        }
+
+        // ✅ Ensure user owns the lease
+        if (lease.user.toString() !== userId) {
+            res.status(403).json({
+                success: false,
+                message: 'Unauthorized to modify this lease.',
+            });
+            return;
+        }
+
+        const car = lease.car as any;
+
+
+        const oldEndDate = new Date(lease.endDate);
+        const newEndDate = new Date(oldEndDate);
+        newEndDate.setDate(newEndDate.getDate() + additionalDays);
+
+
+        const dailyRate = car.pricePerDay;
+        const totalAmount = dailyRate * additionalDays * 100; // Stripe expects cents
+
+
+        const stripe = new Stripe(process.env.STRIPE_SERVER_KEY! as string, {
+            apiVersion: '2025-05-28.basil',
+        });
+
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: totalAmount,
+            currency: 'usd',
+            metadata: {
+                leaseId: lease._id.toString(),
+                carId: car._id.toString(),
+                type: 'lease_extension',
+                userId,
+            },
+        });
+
+        // ✅ Update lease (optional pre-update)
+        lease.endDate = newEndDate;
+        lease.status = 'pending'; // Wait until payment confirmation
+        await lease.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Lease extended by ${additionalDays} day(s). Payment required.`,
+            lease: {
+                id: lease._id,
+                car: car._id,
+                oldEndDate,
+                newEndDate,
+                dailyRate,
+                additionalDays,
+                totalAmount: totalAmount / 100,
+                status: lease.status,
+            },
+            paymentIntentClientSecret: paymentIntent.client_secret,
+        });
+
+    } catch (err) {
+        console.error('❌ Error during lease extension:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while extending lease.',
+        });
+    }
+}
+
+
+
+
+
+
+
+/**
+ * @route   GET /api/payment/history
+ * @desc    Get logged-in user's lease payment history
+ * @access  Private
+ */
+export async function getPaymentDetails(req: Request, res: Response): Promise<void> {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+        res.status(401).json({
+            success: false,
+            message: 'Unauthorized: user ID missing',
+        });
+        return;
+    }
+
+    try {
+
+        const leases = await Lease.find({ user: userId }).populate('car');
+
+        if (!leases.length) {
+            res.status(200).json({
+                success: true,
+                message: 'No lease history found.',
+                data: {
+                    totalLeases: 0,
+                    totalPaid: 0,
+                    totalCancelled: 0,
+                    totalAmountPaid: 0,
+                    leases: [],
+                },
+            });
+            return;
+        }
+
+
+        const totalPaid = leases.filter(l => l.status === 'completed').length;
+        const totalCancelled = leases.filter(l => l.status === 'cancel').length;
+        const totalAmountPaid = leases
+            .filter(l => l.status === 'completed')
+            .reduce((sum, l) => sum + (l.totalAmount || 0), 0);
+
+        res.status(200).json({
+            success: true,
+            message: 'Lease payment history fetched successfully.',
+            data: {
+                totalLeases: leases.length,
+                totalPaid,
+                totalCancelled,
+                totalAmountPaid,
+                leases: leases,
+            },
+        });
+
+    } catch (err) {
+        console.error('❌ Error fetching payment details:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching payment history.',
+        });
+    }
+}

@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
-import dotenv from 'dotenv'
 import {JwtPayload} from '../types/jwt'
+import dotenv from 'dotenv'
 dotenv.config()
 
 function authMiddleware(req: Request, res: Response, next: NextFunction): void {
     const token = req.cookies?.token
-
+   
     if (!token){
         res.status(401).json({ message: 'Access token missing' })
         return;
