@@ -1,8 +1,11 @@
+import dotenv from 'dotenv'
+dotenv.config()
 import { Request, Response } from 'express'
 import { Car } from '../../models/car.model'
 import mongoose from 'mongoose';
 import { Lease } from '../../models/Lease.model';
 import Stripe from 'stripe';
+
 
 
 

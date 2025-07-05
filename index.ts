@@ -36,12 +36,14 @@ app.use("/api/user/auth", userAuthRouter)
 app.use("/api/user", userRouter)
 app.use("/api/admin", adminRouter)
 app.post('/api/payment/webhook', bodyParser.raw({ type: 'application/json' }), webhookHandler);
-
+app.get("/", (req,res)=>{
+    res.send("heyyy")
+})
 
 
 const PORT = process.env.PORT || 5000;
 
-mongoose.connect(process.env.MONGODB_URI || '', {
+mongoose.connect(process.env.MONGODB_URI! || '', {
 }).then(() => {
     connectDB()
     console.log('MongoDB connected');
