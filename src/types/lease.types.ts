@@ -10,6 +10,7 @@ export interface LeaseDocument extends Document {
     status: string;
     isReturned: boolean;
     returnedDate: Date;
+    lastReminderSentAt: Date;
     paymentId: string;
     createdAt: Date;
     updatedAt: Date;

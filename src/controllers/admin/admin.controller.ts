@@ -3,6 +3,7 @@ import { createCarSchema } from '../../lib/zod/zod.car.listing'
 import { Car } from '../../models/car.model';
 import { Lease } from '../../models/Lease.model';
 import { v2 as cloudinary } from 'cloudinary';
+import { redisClient } from '../../lib/redis/redis';
 
 
 
@@ -92,7 +93,7 @@ export async function carListing(req: Request, res: Response): Promise<void> {
         images: imageUrls,
     });
 
-
+    await redisClient.del(`cars`);
     res.status(200).json({
         success: true,
         message: 'Car registered successfully',

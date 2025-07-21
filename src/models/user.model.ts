@@ -49,6 +49,7 @@ const userSchema = new Schema<UserDocument>(
         },
         verificationCode: {
             type: Number,
+            default: undefined
         }
     },
     {

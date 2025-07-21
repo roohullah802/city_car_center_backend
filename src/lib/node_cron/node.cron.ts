@@ -16,17 +16,21 @@ cron.schedule('0 * * * *', async () => {
     }).populate('car');
 
     for (const lease of leases) {
-        const timeLeft = new Date(lease.endDate).getTime() - now.getTime();
+    const timeLeft = new Date(lease.endDate).getTime() - now.getTime();
 
-        if (timeLeft <= oneDayMs) {
-            const last = new Date(0);
-            const hoursSinceLast = (now.getTime() - last.getTime()) / (1000 * 60 * 60);
+    if (timeLeft <= oneDayMs) {
+        const last = lease.lastReminderSentAt || new Date(0);
+        const hoursSinceLast = (now.getTime() - last.getTime()) / (1000 * 60 * 60);
 
-            if (hoursSinceLast >= 2) {
-                const user = lease.user as any;
-                const car = lease.car as any;
-                await sendNotifyEmail(user.email, car.modelName, lease._id, timeLeft)
-            }
+        if (hoursSinceLast >= 2) {
+            const user = lease.user as any;
+            const car = lease.car as any;
+            await sendNotifyEmail(user.email, car.modelName, lease._id, timeLeft)
+
+            lease.lastReminderSentAt = now;
+            await lease.save();
         }
     }
+}
+
 });
