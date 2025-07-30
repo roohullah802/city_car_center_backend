@@ -1,5 +1,5 @@
 import express from 'express'
-import { userSignup, userLogin, userLogout, verifyEmail, resendEmailOtp, forgotPassword, resetPassword, matchOtp } from '../../controllers/user/auth.controller'
+import { userSignup, userLogin, userLogout, verifyEmail, resendEmailOtp, forgotPassword, resetPassword, matchOtp, userProfile, changeUserPassword } from '../../controllers/user/auth.controller'
 import { authMiddleware } from '../../middleware/auth.middleware'
 
 
@@ -14,5 +14,7 @@ userAuthRouter.route("/resend-otp").post(resendEmailOtp)
 userAuthRouter.route("/forgot-password").post(forgotPassword)
 userAuthRouter.route("/match-otp").post(matchOtp)
 userAuthRouter.route("/reset-password").post(resetPassword)
+userAuthRouter.route("/update/profile").post(authMiddleware, userProfile)
+userAuthRouter.route("/update/app/password").post(authMiddleware, changeUserPassword)
 
 export { userAuthRouter }

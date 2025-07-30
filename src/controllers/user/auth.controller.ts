@@ -11,6 +11,7 @@ import { loginSchema } from "../../lib/zod/zod.login";
 import { resetPassSchema } from "../../lib/zod/zod.resetPass";
 import { sendVerificationEmail } from "../../lib/mail/verification.email";
 
+
 /**
  * @route   POST /api/auth/signup
  * @desc    Register a new user
@@ -63,7 +64,7 @@ export async function userSignup(req: Request, res: Response): Promise<void> {
     await user.save();
 
     await sendEmail(email, code);
-    await redisClient.setEx(`user:${email}`, 404800, JSON.stringify(user));
+    await redisClient.setEx(`user:${email}`, 86400, JSON.stringify(user));
 
     res.status(201).json({
       success: true,
@@ -123,6 +124,9 @@ export async function userLogin(req: Request, res: Response): Promise<void> {
         res.status(400).json({ success: false, message: "user not found" });
         return;
       }
+      await redisClient.set(`user:${email}`, JSON.stringify(user), {
+        EX: 86400,
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -218,7 +222,7 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
     user.verificationCode = "";
     user.isVerified = true;
     await redisClient.set(`user:${email}`, JSON.stringify(user), {
-      EX: 404800,
+      EX: 86400,
     });
 
     await User.findOneAndUpdate(
@@ -352,7 +356,7 @@ export async function forgotPassword(
 
     user.verificationCode = newCode;
     await redisClient.set(`user:${email}`, JSON.stringify(user), {
-      EX: 404800,
+      EX: 86400,
     });
     await User.findOneAndUpdate(
       { email },
@@ -475,7 +479,7 @@ export async function resetPassword(
     );
     user.password = hashedPassword;
     await redisClient.set(`user:${email}`, JSON.stringify(user), {
-      EX: 404800,
+      EX: 86400,
     });
 
     res.status(200).json({
@@ -489,3 +493,141 @@ export async function resetPassword(
       .json({ success: false, message: "Failed to reset password." });
   }
 }
+
+/**
+ * @route   PUT /api/user/profile
+ * @desc    Update user profile with optional PDF upload (e.g., driving licence)
+ * @access  Private (Requires authentication)
+ */
+
+export async function userProfile(req: Request, res: Response): Promise<void> {
+  interface CloudinaryFile extends Express.Multer.File {
+    url?: string;
+    secure_url?: string;
+  }
+
+  const userId = req.user?.userId;
+  const { firstName, lastName, gender, age } = req.body;
+  const pdf = req.file as CloudinaryFile;
+
+  try {
+    const updatedData: any = {
+      firstName,
+      lastName,
+      gender,
+      age,
+    };
+
+    // Attach PDF data if uploaded
+    if (pdf) {
+      updatedData.drivingLicence = {
+        url: pdf.path,
+        public_id: pdf.secure_url,
+      };
+    }
+
+    const userProfile = await User.findByIdAndUpdate(userId, updatedData, {
+      new: true,
+    });
+
+    if (!userProfile) {
+      res.status(400).json({
+        success: false,
+        message: "Failed to update user profile. User not found.",
+      });
+      return;
+    }
+
+    // Cache updated profile in Redis for 1 day (86400 seconds)
+    await redisClient.setEx(
+      `user:${userProfile.email}`,
+      86400,
+      JSON.stringify(userProfile)
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "User profile updated successfully.",
+      data: userProfile,
+    });
+  } catch (error) {
+    console.error("Profile Update Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error while updating profile.",
+    });
+  }
+}
+
+
+
+
+// Controller: Change user password after verifying old one
+export async function changeUserPassword(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const userId = req.user?.userId;
+  const { oldPassword, newPassword, reNewPassword } = req.body;
+
+  if (!userId) {
+    res.status(401).json({ success: false, message: "Unauthorized user." });
+    return;
+  }
+
+  if (!oldPassword || !newPassword || !reNewPassword) {
+    res.status(400).json({
+      success: false,
+      message: "Please provide all required fields.",
+    });
+    return;
+  }
+
+  if (newPassword !== reNewPassword) {
+    res.status(400).json({
+      success: false,
+      message: "New password and confirmation do not match.",
+    });
+    return;
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user || !user.password) {
+      res.status(404).json({ success: false, message: "User not found." });
+      return;
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      res.status(400).json({
+        success: false,
+        message: "Old password is incorrect.",
+      });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    // Optional: update Redis cache if you're caching user
+    await redisClient.setEx(`user:${user.email}`, 86400, JSON.stringify(user));
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully.",
+    });
+  } catch (error) {
+    console.error("Password change error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+}
+
+
+
+

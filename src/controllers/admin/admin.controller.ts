@@ -4,6 +4,8 @@ import { Car } from '../../models/car.model';
 import { Lease } from '../../models/Lease.model';
 import { v2 as cloudinary } from 'cloudinary';
 import { redisClient } from '../../lib/redis/redis';
+import { Faq } from '../../models/faqs.model';
+import { Policy } from '../../models/policy.model';
 
 
 
@@ -105,9 +107,6 @@ export async function carListing(req: Request, res: Response): Promise<void> {
 
 
 
-
-
-
 /**
  * Deletes a lease by its ID, updates the associated car to be available again.
  */
@@ -176,5 +175,104 @@ export async function deleteCarListing(req: Request, res: Response): Promise<voi
   } catch (error) {
     console.error('Error deleting car:', error);
     res.status(500).json({ success: false, message: 'Server error', error });
+  }
+}
+
+
+
+/**
+ * @desc   Add a single FAQ to the database
+ * @route  POST /api/faqs
+ * @access Protected (requires authentication)
+ */
+export async function setFAQs(req: Request, res: Response): Promise<void> {
+  const userId = req.user?.userId;
+  const { question, answer } = req.body;
+
+  if (!userId) {
+    res.status(400).json({ success: false, message: "User not authorized" });
+    return;
+  }
+  if (!question || !answer) {
+    res
+      .status(400)
+      .json({ success: false, message: "Please provide both question and answer." });
+    return;
+  }
+
+  try {
+    const faq = await Faq.insertOne({
+      question: question,
+      answer: answer,
+    });
+
+    if (!faq) {
+      res.status(400).json({ success: false, message: "FAQs not inserted!" });
+      return;
+    }
+
+    await redisClient.del("Faqs:AllFAQs");
+    res
+      .status(200)
+      .json({ success: true, message: "FAQ added successfully." });
+  } catch (error) {
+    res.status(400).json({ success: false, message: "Interval server error!" });
+    return;
+  }
+}
+
+
+// Controller to set or create a Privacy Policy document
+export async function setPrivacypolicy(req: Request, res: Response): Promise<void> {
+  const userId = req.user?.userId;
+  const { title, description } = req.body;
+
+  
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized user. Please login to perform this action.",
+    });
+    return;
+  }
+
+  
+  if (!title || !description) {
+    res.status(400).json({
+      success: false,
+      message: "Please provide both title and description.",
+    });
+    return;
+  }
+
+  try {
+   
+    const data = await Policy.insertMany([{
+      title: title,
+      content: description,
+    }]);
+
+    if (!data || data.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "Failed to add Privacy Policy.",
+      });
+      return;
+    }
+
+    // Invalidate Redis cache so new policy gets fetched next time
+    await redisClient.del(`policy:policy`);
+
+    res.status(200).json({
+      success: true,
+      message: "Privacy Policy added successfully.",
+      data: data[0],
+    });
+  } catch (error) {
+    console.error("Error while setting privacy policy:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error. Please try again later.",
+    });
   }
 }

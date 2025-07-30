@@ -13,7 +13,7 @@ import { connectRedis } from "./src/lib/redis/redis";
 dotenv.config();
 connectRedis();
 
-const app = express();
+const app = express(); 
 
 const corsOptions = {
   origin: [
