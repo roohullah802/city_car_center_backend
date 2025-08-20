@@ -14,6 +14,7 @@ export interface UserDocument extends Document {
   drivingLicence: userPDF;
   phoneNo: string;
   password: string;
+  profile: string;
   isVerified: boolean;
   verificationCode: number | undefined;
   createdAt: Date;
@@ -63,6 +64,9 @@ const userSchema = new Schema<UserDocument>(
       type: String,
       required: true,
       minlength: 6,
+    },
+    profile:{
+      type: String
     },
     isVerified: {
       type: Boolean,

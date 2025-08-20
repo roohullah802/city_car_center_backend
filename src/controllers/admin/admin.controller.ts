@@ -6,6 +6,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import { redisClient } from '../../lib/redis/redis';
 import { Faq } from '../../models/faqs.model';
 import { Policy } from '../../models/policy.model';
+import { log } from 'console';
 
 
 
@@ -71,8 +72,8 @@ export async function carListing(req: Request, res: Response): Promise<void> {
     } = parsed.data;
 
     const car = await Car.create({
-        brand,
-        modelName,
+        brand: brand.toLocaleLowerCase(),
+        modelName: modelName.toLocaleLowerCase(),
         year,
         color,
         price,
@@ -188,6 +189,7 @@ export async function deleteCarListing(req: Request, res: Response): Promise<voi
 export async function setFAQs(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
   const { question, answer } = req.body;
+  
 
   if (!userId) {
     res.status(400).json({ success: false, message: "User not authorized" });

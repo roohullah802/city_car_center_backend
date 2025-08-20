@@ -37,6 +37,7 @@ export async function getCarDetails(
     }
 
     const redisCarDetails = await redisClient.hGetAll(`carDetails:${id}`);
+    
     let cars;
     if (Object.keys(redisCarDetails).length > 0) {
       cars = redisCarDetails;
@@ -60,8 +61,10 @@ export async function getCarDetails(
           },
         },
       ]);
+      cars = cars[0]
+      
 
-      const carData = cars[0];
+      const carData = cars;
       const redisHash: Record<string, string> = {};
 
       for (let [field, value] of Object.entries(carData)) {
@@ -104,21 +107,16 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
 
   try {
-    // Get page and limit from query parameters, with defaults
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const skip = (page - 1) * limit;
+  
 
-    const redisKey = `AllCars:CarsArray:page:${page}:limit:${limit}`;
+    const redisKey = `AllCars:AllCars`;
 
-    // Try to get paginated result from Redis cache
     const redisCars = await redisClient.get(redisKey);
     let allCars;
 
     if (redisCars) {
       allCars = JSON.parse(redisCars);
     } else {
-      // Run aggregation with pagination
       allCars = await Car.aggregate([
         {
           $match: {},
@@ -135,9 +133,7 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
           $addFields: {
             totalReviews: { $size: "$reviews_data" },
           },
-        },
-        { $skip: skip },
-        { $limit: limit },
+        }
       ]);
 
       if (!allCars || allCars.length === 0) {
@@ -148,22 +144,17 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
         return;
       }
 
-      // Cache paginated result
       await redisClient.set(redisKey, JSON.stringify(allCars), {
         EX: 86400,
       });
     }
 
-    // Optional: total count for pagination UI
     const totalCars = await Car.countDocuments();
 
     res.status(200).json({
       success: true,
       message: "Cars fetched successfully.",
       data: allCars,
-      page,
-      limit,
-      totalPages: Math.ceil(totalCars / limit),
       totalCars,
     });
   } catch (error) {
@@ -783,16 +774,6 @@ export async function getAllFAQs(req: Request, res: Response): Promise<void> {
  * @access  Private
  */
 export async function getAllPolicy(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId;
-
-  
-  if (!userId) {
-    res.status(401).json({
-      success: false,
-      message: "Unauthorized access. Please log in.",
-    });
-    return;
-  }
 
   try {
   
@@ -834,6 +815,7 @@ export async function getAllPolicy(req: Request, res: Response): Promise<void> {
 
 
 
+
 /**
  * @route   POST /api/report-issue
  * @desc    Report an issue from a logged-in user
@@ -843,7 +825,10 @@ export async function reportIssue(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
   const { email, description } = req.body;
 
-  if (!userId) {
+  
+
+  try {
+    if (!userId) {
     res.status(401).json({
       success: false,
       message: "Unauthorized access. Please log in to report an issue.",
@@ -859,15 +844,21 @@ export async function reportIssue(req: Request, res: Response): Promise<void> {
     });
     return;
   }
-
-  try {
     const issue = new IssueReport({
-      user: userId,
+      userId,
       email,
       description,
     });
 
-    await issue.save();
+    await issue.save()
+
+    if (!issue) {
+      res.status(400).json({
+      success: false,
+      message: "report posted failed! due to some issue.",
+    });
+    return;
+    }
 
     res.status(201).json({
       success: true,

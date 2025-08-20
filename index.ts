@@ -18,11 +18,11 @@ const app = express();
 const corsOptions = {
   origin: [
     "http://localhost:3000", // React.js (local dev)
-    "http://127.0.0.1:3000", // alternate localhost
+    "http://127.0.0.1:5000", // alternate localhost
     "http://localhost:19006", // React Native Web (Expo)
     "http://localhost:8081", // React Native CLI
-    "exp://127.0.0.1:19000", // Expo Go App
-    // "your-frontend-domain.com",   // Production frontend
+    "your-frontend-domain.com",   // Production frontend
+    '*',
   ],
   credentials: true, // If you're using cookies or auth headers
 };
@@ -40,7 +40,9 @@ app.post(
   bodyParser.raw({ type: "application/json" }),
   webhookHandler
 );
-
+app.get("/", (req, res)=>{
+  res.send("heyy")
+})
 const PORT = process.env.PORT || 5000;
 
 mongoose
@@ -48,7 +50,7 @@ mongoose
   .then(() => {
     connectDB();
     console.log("MongoDB connected");
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    app.listen(5000,'0.0.0.0', () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => {
     console.error("DB connection failed:", err);

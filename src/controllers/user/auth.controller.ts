@@ -25,7 +25,7 @@ export async function userSignup(req: Request, res: Response): Promise<void> {
     if (!parsed.success) {
       res.status(400).json({
         success: false,
-        message: "Validation error",
+        message: "Some input fields are missing or incorrect. Please review and try again.",
         errors: parsed.error.flatten().fieldErrors,
       });
       return;
@@ -97,7 +97,7 @@ export async function userLogin(req: Request, res: Response): Promise<void> {
   if (!parsed.success) {
     res.status(400).json({
       success: false,
-      message: "Validation error",
+      message: "Some input fields are missing or incorrect. Please review and try again.",
       errors: parsed.error.flatten().fieldErrors,
     });
     return;
@@ -144,7 +144,7 @@ export async function userLogin(req: Request, res: Response): Promise<void> {
     res
       .cookie("token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: false,
         sameSite: "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
@@ -158,6 +158,7 @@ export async function userLogin(req: Request, res: Response): Promise<void> {
           lastName: user.lastName,
           email: user.email,
           phoneNo: user.phoneNo,
+          token: token
         },
       });
   } catch (error) {
@@ -346,7 +347,7 @@ export async function forgotPassword(
       if (!user) {
         res.status(200).json({
           success: true,
-          message: "If the email exists, a reset link has been sent.",
+          message: "User not found.",
         });
         return;
       }
