@@ -6,11 +6,9 @@ import { signupSchema } from "../../lib/zod/zod.signup";
 import { User } from "../../models/user.model";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { sendEmail } from "../../lib/mail/nodemailer";
 import { loginSchema } from "../../lib/zod/zod.login";
 import { resetPassSchema } from "../../lib/zod/zod.resetPass";
-import { sendVerificationEmail } from "../../lib/mail/verification.email";
-
+import { emailQueue } from "../../lib/mail/emailQueues";
 
 /**
  * @route   POST /api/auth/signup
@@ -25,7 +23,8 @@ export async function userSignup(req: Request, res: Response): Promise<void> {
     if (!parsed.success) {
       res.status(400).json({
         success: false,
-        message: "Some input fields are missing or incorrect. Please review and try again.",
+        message:
+          "Some input fields are missing or incorrect. Please review and try again.",
         errors: parsed.error.flatten().fieldErrors,
       });
       return;
@@ -63,7 +62,20 @@ export async function userSignup(req: Request, res: Response): Promise<void> {
     user.verificationCode = code;
     await user.save();
 
-    await sendEmail(email, code);
+    await emailQueue.add(
+      "sendVerificationEmail",
+      {
+        to: email,
+        code,
+      },
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 5000,
+        },
+      }
+    );
     await redisClient.setEx(`user:${email}`, 86400, JSON.stringify(user));
 
     res.status(201).json({
@@ -97,7 +109,8 @@ export async function userLogin(req: Request, res: Response): Promise<void> {
   if (!parsed.success) {
     res.status(400).json({
       success: false,
-      message: "Some input fields are missing or incorrect. Please review and try again.",
+      message:
+        "Some input fields are missing or incorrect. Please review and try again.",
       errors: parsed.error.flatten().fieldErrors,
     });
     return;
@@ -158,7 +171,7 @@ export async function userLogin(req: Request, res: Response): Promise<void> {
           lastName: user.lastName,
           email: user.email,
           phoneNo: user.phoneNo,
-          token: token
+          token: token,
         },
       });
   } catch (error) {
@@ -295,13 +308,24 @@ export async function resendEmailOtp(
       EX: 900,
     });
 
-    if (!user.save) {
-      user = User.hydrate(user);
-    }
+    await User.findOneAndUpdate(
+      { email },
+      {
+        verificationCode: newCode,
+      }
+    );
 
-    await user.save();
-
-    await sendVerificationEmail(email, newCode);
+    await emailQueue.add(
+      "resendEmailOtp",
+      { code: newCode },
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 5000,
+        },
+      }
+    );
 
     res.status(200).json({
       success: true,
@@ -346,11 +370,16 @@ export async function forgotPassword(
 
       if (!user) {
         res.status(200).json({
-          success: true,
+          success: false,
           message: "User not found.",
         });
         return;
       }
+    }
+
+    if (!user) {
+      res.status(400).json({ success: false, message: "User not found" });
+      return;
     }
 
     const newCode = Math.floor(100000 + Math.random() * 900000);
@@ -366,7 +395,17 @@ export async function forgotPassword(
       },
       { new: true }
     );
-    await sendVerificationEmail(email, newCode);
+     await emailQueue.add(
+      "resendEmailOtp",
+      { code: newCode },
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 5000,
+        },
+      }
+    );
 
     res.status(200).json({
       success: true,
@@ -412,7 +451,7 @@ export async function matchOtp(req: Request, res: Response): Promise<void> {
 
   res
     .status(200)
-    .json({ success: false, message: "password matched successfully" });
+    .json({ success: true, message: "password matched successfully" });
 }
 
 /**
@@ -560,8 +599,71 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
   }
 }
 
+export async function resndCode(req: Request, res: Response): Promise<void> {
+  const { email } = req.body as { email: string };
 
+  if (!email) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized. Please login first.",
+    });
+    return;
+  }
 
+  try {
+    let user;
+    const redisUser = await redisClient.get(`user:${email}`);
+
+    if (redisUser) {
+      user = JSON.parse(redisUser);
+    } else {
+      user = await User.findOne({ email });
+      if (!user) {
+        res.status(404).json({ success: false, message: "User not found." });
+        return;
+      }
+    }
+
+    const newCode = Math.floor(100000 + Math.random() * 900000);
+
+    user.verificationCode = newCode;
+
+    await redisClient.set(`user:${email}`, JSON.stringify(user), {
+      EX: 900,
+    });
+
+    await User.findOneAndUpdate(
+      { email },
+      {
+        verificationCode: newCode,
+      },
+      { new: true }
+    );
+
+     await emailQueue.add(
+      "resendEmailOtp",
+      { code: newCode },
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 5000,
+        },
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Verification code resent to your email.",
+    });
+  } catch (error) {
+    console.error("Resend OTP error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to resend verification code.",
+    });
+  }
+}
 
 // Controller: Change user password after verifying old one
 export async function changeUserPassword(
@@ -628,7 +730,3 @@ export async function changeUserPassword(
     });
   }
 }
-
-
-
-

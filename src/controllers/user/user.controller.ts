@@ -9,8 +9,7 @@ import { redisClient } from "../../lib/redis/redis";
 import { Faq } from "../../models/faqs.model";
 import { Policy } from "../../models/policy.model";
 import { IssueReport } from "../../models/report.model";
-
-
+import { emailQueue } from "../../lib/mail/emailQueues";
 
 /**
  * @route   POST /api/cars/details
@@ -37,7 +36,7 @@ export async function getCarDetails(
     }
 
     const redisCarDetails = await redisClient.hGetAll(`carDetails:${id}`);
-    
+
     let cars;
     if (Object.keys(redisCarDetails).length > 0) {
       cars = redisCarDetails;
@@ -61,8 +60,7 @@ export async function getCarDetails(
           },
         },
       ]);
-      cars = cars[0]
-      
+      cars = cars[0];
 
       const carData = cars;
       const redisHash: Record<string, string> = {};
@@ -107,8 +105,6 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
 
   try {
-  
-
     const redisKey = `AllCars:AllCars`;
 
     const redisCars = await redisClient.get(redisKey);
@@ -133,7 +129,7 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
           $addFields: {
             totalReviews: { $size: "$reviews_data" },
           },
-        }
+        },
       ]);
 
       if (!allCars || allCars.length === 0) {
@@ -203,10 +199,8 @@ export async function createLease(req: Request, res: Response): Promise<void> {
     let car;
     if (redisUser) {
       car = JSON.parse(redisUser);
-      console.log("..");
     } else {
       car = await Car.findById(carId);
-      console.log(".....");
 
       if (!car) {
         res.status(404).json({
@@ -276,7 +270,19 @@ export async function createLease(req: Request, res: Response): Promise<void> {
     await redisClient.set(`carAvailable:${carId}`, JSON.stringify(car), {
       EX: 86400,
     });
+    await redisClient.del(`leases:${userId}`);
     await Car.findByIdAndUpdate(carId, { available: false });
+    await emailQueue.add(
+      "leaseConfirmationEmail",
+      { leaseId: lease._id, startDate, endDate },
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 5000,
+        },
+      }
+    );
 
     res.status(201).json({
       success: true,
@@ -736,7 +742,6 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
   }
 }
 
-
 // Controller: Fetch all FAQs with Redis caching
 export async function getAllFAQs(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
@@ -766,24 +771,19 @@ export async function getAllFAQs(req: Request, res: Response): Promise<void> {
   }
 }
 
-
-
 /**
  * @route   GET /api/policy
  * @desc    Fetch privacy and terms policy for the authenticated user
  * @access  Private
  */
 export async function getAllPolicy(req: Request, res: Response): Promise<void> {
-
   try {
-  
     const cachedPolicy = await redisClient.get("policy:policy");
     let policy;
 
     if (cachedPolicy) {
       policy = JSON.parse(cachedPolicy);
     } else {
-      
       policy = await Policy.find();
 
       if (!policy || policy.length === 0) {
@@ -794,11 +794,9 @@ export async function getAllPolicy(req: Request, res: Response): Promise<void> {
         return;
       }
 
-    
       await redisClient.setEx("policy:policy", 86400, JSON.stringify(policy));
     }
 
-  
     res.status(200).json({
       success: true,
       message: "Privacy and Terms policy retrieved successfully.",
@@ -813,9 +811,6 @@ export async function getAllPolicy(req: Request, res: Response): Promise<void> {
   }
 }
 
-
-
-
 /**
  * @route   POST /api/report-issue
  * @desc    Report an issue from a logged-in user
@@ -825,39 +820,36 @@ export async function reportIssue(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
   const { email, description } = req.body;
 
-  
-
   try {
     if (!userId) {
-    res.status(401).json({
-      success: false,
-      message: "Unauthorized access. Please log in to report an issue.",
-    });
-    return;
-  }
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized access. Please log in to report an issue.",
+      });
+      return;
+    }
 
-
-  if (!email || !description) {
-    res.status(400).json({
-      success: false,
-      message: "email and description are required.",
-    });
-    return;
-  }
+    if (!email || !description) {
+      res.status(400).json({
+        success: false,
+        message: "email and description are required.",
+      });
+      return;
+    }
     const issue = new IssueReport({
       userId,
       email,
       description,
     });
 
-    await issue.save()
+    await issue.save();
 
     if (!issue) {
       res.status(400).json({
-      success: false,
-      message: "report posted failed! due to some issue.",
-    });
-    return;
+        success: false,
+        message: "report posted failed! due to some issue.",
+      });
+      return;
     }
 
     res.status(201).json({
@@ -871,5 +863,63 @@ export async function reportIssue(req: Request, res: Response): Promise<void> {
       success: false,
       message: "An error occurred while reporting the issue.",
     });
+  }
+}
+
+/**
+ * @desc    Get all leases for the current user (with Redis caching)
+ * @route   GET /api/leases
+ * @access  Private
+ */
+export async function getAllLeases(req: Request, res: Response): Promise<void> {
+  const userId = req.user?.userId;
+
+  if (!userId) {
+    res
+      .status(401)
+      .json({ success: false, message: "Unauthorized: Missing user ID" });
+    return;
+  }
+
+  try {
+    const cachedLeases = await redisClient.get(`leases:${userId}`);
+
+    if (cachedLeases) {
+      const lease = JSON.parse(cachedLeases);
+      res
+        .status(200)
+        .json({ success: true, message: "Lease fetched from cache", lease });
+      return;
+    }
+
+    const lease = await Lease.aggregate([
+      {
+        $match: {},
+      },
+      {
+        $lookup: {
+          from: "cars",
+          localField: "car",
+          foreignField: "_id",
+          as: "carDetails",
+        },
+      },
+    ]);
+
+    if (!lease || lease.length === 0) {
+      res.status(404).json({ success: false, message: "No lease data found" });
+      return;
+    }
+
+    await redisClient.set(`leases:${userId}`, JSON.stringify(lease), {
+      EX: 60 * 60 * 24 * 4,
+    }); // 5 days
+
+    res
+      .status(200)
+      .json({ success: true, message: "Lease fetched successfully", lease });
+  } catch (error) {
+    console.error("getAllLeases error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 }

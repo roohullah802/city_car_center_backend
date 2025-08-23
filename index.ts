@@ -10,6 +10,11 @@ import { userRouter } from "./src/routers/user/user.router";
 import { adminRouter } from "./src/routers/admin/admin.router";
 import { webhookHandler } from "./src/lib/webhook";
 import { connectRedis } from "./src/lib/redis/redis";
+import './src/lib/mail/reminder/leaseReminderQueue';
+import './src/lib/mail/reminder/leaseReminderWorker';
+import { leaseReminderQueue } from './src/lib/mail/reminder/leaseReminderQueue';
+
+
 dotenv.config();
 connectRedis();
 
@@ -35,15 +40,41 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/api/user/auth", userAuthRouter);
 app.use("/api/user", userRouter);
 app.use("/api/admin", adminRouter);
-app.post(
-  "/api/payment/webhook",
-  bodyParser.raw({ type: "application/json" }),
-  webhookHandler
-);
-app.get("/", (req, res)=>{
-  res.send("heyy")
-})
 const PORT = process.env.PORT || 5000;
+
+
+
+async function init() {
+  try {
+    const jobs = await leaseReminderQueue.getRepeatableJobs();
+    const alreadyExists = jobs.find(job => job.name === 'sendLeaseReminders');
+
+    if (!alreadyExists) {
+      await leaseReminderQueue.add(
+        'sendLeaseReminders',
+        {},
+        {
+          repeat: {
+            cron: '0 * * * *',
+          } as any,
+          removeOnComplete: true,
+          removeOnFail: true,
+        }
+      );
+
+      console.log('✅ Lease reminder job scheduled (hourly)');
+    } else {
+      console.log('⏳ Lease reminder job already exists');
+    }
+  } catch (err) {
+    console.error('❌ Failed to schedule lease reminder job:', err);
+  }
+}
+
+init();
+
+
+
 
 mongoose
   .connect(process.env.MONGODB_URI! || "", {})
