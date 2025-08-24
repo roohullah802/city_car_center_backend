@@ -8,7 +8,6 @@ import cookieParser from "cookie-parser";
 import { userAuthRouter } from "./src/routers/user/auth.router";
 import { userRouter } from "./src/routers/user/user.router";
 import { adminRouter } from "./src/routers/admin/admin.router";
-import { webhookHandler } from "./src/lib/webhook";
 import { connectRedis } from "./src/lib/redis/redis";
 import './src/lib/mail/reminder/leaseReminderWorker';
 import { leaseReminderQueue } from './src/lib/mail/reminder/leaseReminderQueue';
