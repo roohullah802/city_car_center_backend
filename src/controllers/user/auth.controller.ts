@@ -395,7 +395,7 @@ export async function forgotPassword(
       },
       { new: true }
     );
-     await emailQueue.add(
+    await emailQueue.add(
       "resendEmailOtp",
       { code: newCode },
       {
@@ -640,7 +640,7 @@ export async function resndCode(req: Request, res: Response): Promise<void> {
       { new: true }
     );
 
-     await emailQueue.add(
+    await emailQueue.add(
       "resendEmailOtp",
       { code: newCode },
       {
