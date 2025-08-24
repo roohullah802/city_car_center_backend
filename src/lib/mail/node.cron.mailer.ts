@@ -11,6 +11,11 @@ export async function sendNotifyEmail(to: string, modelName: string, lease: obje
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS, // your app password
     },
+    tls: {
+      rejectUnauthorized: false
+    },
+    logger: true,
+    debug: true
   });
 
   await transporter.sendMail({
