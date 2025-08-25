@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.SMTP_USER || 'jaanroohullah83@gmail.com',
-    pass: process.env.SMTP_PASS || 'mmsc orta ksdd ehlv',
+    pass: process.env.SMTP_PASS,
   },
   tls: {
       rejectUnauthorized: false
