@@ -76,6 +76,8 @@ export async function userSignup(req: Request, res: Response): Promise<void> {
         },
       }
     );
+    console.log('sending queue');
+    
     await redisClient.setEx(`user:${email}`, 86400, JSON.stringify(user));
 
     res.status(201).json({
