@@ -8,8 +8,8 @@ import { connection } from './redis';
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.SMTP_USER || 'jaanroohullah83@gmail.com',
+    pass: process.env.SMTP_PASS || 'mmsc orta ksdd ehlv',
   },
   tls: {
       rejectUnauthorized: false
@@ -27,7 +27,7 @@ const worker = new Worker(
     if (job.name === "sendVerificationEmail") {
       const { code } = job.data;
       await transporter.sendMail({
-        from: process.env.SMTP_USER,
+        from: process.env.SMTP_USER || 'jaanroohullah83@gmail.com',
         to,
         subject: "Welcome to City Car Center",
         html: `
@@ -47,7 +47,7 @@ const worker = new Worker(
       const { leaseId, startDate, endDate } = job.data;
 
       await transporter.sendMail({
-        from: process.env.SMTP_USER,
+        from: process.env.SMTP_USER || 'jaanroohullah83@gmail.com',
         to,
         subject: "Your Lease Confirmation",
         html: `
@@ -66,7 +66,7 @@ const worker = new Worker(
     if (job.name === "resendEmailOtp") {
       const { code } = job.data;
       await transporter.sendMail({
-        from: process.env.SMTP_USER,
+        from: process.env.SMTP_USER || 'jaanroohullah83@gmail.com',
         to,
         subject: "Email verification code",
         html: `
