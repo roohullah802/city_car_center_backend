@@ -26,28 +26,28 @@ export const upload = multer({
 });
 
 export const compressAndResize = async (req: any, res: any, next: any) => {
-  // Skip if no files
   if (!req.files || typeof req.files !== 'object') return next();
 
-  const processedFiles: Express.Multer.File[] = [];
+  const processedFiles: { [fieldname: string]: Express.Multer.File[] } = {};
+  const BASE_PATH = path.join(__dirname, '../../../../../private_data/uploads');
 
   try {
-    // Iterate through each field in req.files
-    for (const key in req.files) {
-      const fileArray = req.files[key];
+    for (const field in req.files) {
+      const fileArray = req.files[field];
 
       if (Array.isArray(fileArray)) {
+        processedFiles[field] = [];
+
         for (const file of fileArray) {
           const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
-          const outputPath = path.join(uploadPath, uniqueName);
+          const outputPath = path.join(BASE_PATH, uniqueName);
 
-          // Resize and compress with sharp
           await sharp(file.buffer)
-            .resize({ width: 800 }) // Resize to width 800px
-            .jpeg({ quality: 70 })  // Compress to ~70% quality
+            .resize({ width: 800 })
+            .jpeg({ quality: 70 })
             .toFile(outputPath);
 
-          processedFiles.push({
+          processedFiles[field].push({
             ...file,
             filename: uniqueName,
             path: outputPath,
@@ -57,10 +57,10 @@ export const compressAndResize = async (req: any, res: any, next: any) => {
       }
     }
 
-    // Overwrite req.files with the processed files array
     req.files = processedFiles;
     next();
   } catch (err) {
     next(err);
   }
 };
+
