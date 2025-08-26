@@ -2,10 +2,9 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { CarDocument } from '../types/car.types'
 
 
-const imageSchema = new mongoose.Schema({
-  url: { type: String, required: true },
-  public_id: { type: String, required: true },
-}, {_id: false});
+// const imageSchema = new mongoose.Schema({
+//   url: { type: String, required: true },
+// }, {_id: false});
 
 const carSchema = new Schema<CarDocument>(
   {
@@ -37,8 +36,8 @@ const carSchema = new Schema<CarDocument>(
       required: true,
     },
     description: { type: String },
-    images: [imageSchema],
-    brandImage: imageSchema,
+    images: [String],
+    brandImage: [String],
 
   },
   { timestamps: true }

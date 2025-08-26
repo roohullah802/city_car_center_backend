@@ -1,7 +1,7 @@
 import express from "express";
 import { carListing, deleteLease, deleteCarListing, setFAQs, setPrivacypolicy } from '../../controllers/admin/admin.controller'
 import { authMiddleware, } from "../../middleware/auth.middleware";
-import upload from "../../lib/multer/multer";
+import {upload} from '../../lib/multer/multer';
 
 const adminRouter = express.Router()
 

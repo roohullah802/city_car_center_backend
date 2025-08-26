@@ -18,8 +18,6 @@ const transporter = nodemailer.createTransport({
     debug: true
 });
 
-console.log("workerr");
-
 
 const worker = new Worker(
   "emailQueue",
