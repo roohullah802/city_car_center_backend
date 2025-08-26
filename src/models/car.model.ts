@@ -1,11 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { CarDocument } from '../types/car.types'
 
-
-// const imageSchema = new mongoose.Schema({
-//   url: { type: String, required: true },
-// }, {_id: false});
-
 const carSchema = new Schema<CarDocument>(
   {
     brand: { type: String, required: true },
