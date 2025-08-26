@@ -32,8 +32,9 @@ export async function carListing(req: Request, res: Response): Promise<void> {
 
 
   const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-  const images = files["images"]?.map(file => file.path) || [];
-  const brandImage = files["brandImage"]?.[0]?.path || null;
+  const BASE_URL = 'http://82.25.85.117/uploads/'
+  const images = files["images"]?.map(file => BASE_URL + file.filename) || [];
+  const brandImage = files["brandImage"]?.[0]? BASE_URL + files["brandImage"][0].filename : null;
   console.log(images);
   console.log(brandImage);
 
