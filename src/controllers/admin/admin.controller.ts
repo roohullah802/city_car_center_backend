@@ -2,22 +2,12 @@ import { Request, Response } from "express";
 import { createCarSchema } from "../../lib/zod/zod.car.listing";
 import { Car } from "../../models/car.model";
 import { Lease } from "../../models/Lease.model";
-import { v2 as cloudinary } from "cloudinary";
 import { redisClient } from "../../lib/redis/redis";
 import { Faq } from "../../models/faqs.model";
 import { Policy } from "../../models/policy.model";
-import { log } from "console";
 
-interface CloudinaryFile extends Omit<Express.Multer.File, "path"> {
-  path?: string;
-  secure_url?: string;
-  filename: string;
-}
 
-type MulterFiles = {
-  images?: CloudinaryFile[];
-  brandImage?: CloudinaryFile[];
-};
+
 
 export async function carListing(req: Request, res: Response): Promise<void> {
   const parsed = createCarSchema.safeParse(req.body);
@@ -30,13 +20,12 @@ export async function carListing(req: Request, res: Response): Promise<void> {
     return;
   }
 
-
   const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-  const BASE_URL = 'http://82.25.85.117/uploads/'
-  const images = files["images"]?.map(file => BASE_URL + file.filename) || [];
-  const brandImage = files["brandImage"]?.[0]? BASE_URL + files["brandImage"][0].filename : null;
-  console.log(images);
-  console.log(brandImage);
+  const BASE_URL = "http://82.25.85.117/uploads/";
+  const images = files["images"]?.map((file) => BASE_URL + file.filename) || [];
+  const brandImage = files["brandImage"]?.[0]
+    ? BASE_URL + files["brandImage"][0].filename
+    : null;
 
   const {
     brand,
@@ -122,6 +111,8 @@ export async function deleteLease(req: Request, res: Response): Promise<void> {
   });
 }
 
+
+
 export async function deleteCarListing(
   req: Request,
   res: Response
@@ -139,19 +130,7 @@ export async function deleteCarListing(
       return;
     }
 
-    // ✅ Delete images from Cloudinary
-    for (const image of car?.images || []) {
-      if (image.public_id) {
-        await cloudinary.uploader.destroy(image.public_id);
-      }
-    }
-
-    // ✅ Delete brand image
-    if (car.brandImage?.public_id) {
-      await cloudinary.uploader.destroy(car.brandImage.public_id);
-    }
-
-    // ✅ Delete the car from the DB
+   
     await Car.findByIdAndDelete(carId);
 
     res
@@ -202,6 +181,8 @@ export async function setFAQs(req: Request, res: Response): Promise<void> {
     return;
   }
 }
+
+
 
 // Controller to set or create a Privacy Policy document
 export async function setPrivacypolicy(
