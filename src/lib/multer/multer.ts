@@ -25,31 +25,42 @@ export const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 });
 
-// Middleware to compress and resize images
 export const compressAndResize = async (req: any, res: any, next: any) => {
-  if (!req.files) return next();
+  // Skip if no files
+  if (!req.files || typeof req.files !== 'object') return next();
 
   const processedFiles: Express.Multer.File[] = [];
 
-  for (const file of req.files) {
-    const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9) + path.extname(file.originalname);
-    const outputPath = path.join(uploadPath, uniqueName);
+  try {
+    // Iterate through each field in req.files
+    for (const key in req.files) {
+      const fileArray = req.files[key];
 
-    // Resize & compress with Sharp
-    await sharp(file.buffer)
-      .resize({ width: 800 })       // Resize width to 800px (height auto)
-      .jpeg({ quality: 70 })        // Compress to ~70% quality
-      .toFile(outputPath);
+      if (Array.isArray(fileArray)) {
+        for (const file of fileArray) {
+          const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
+          const outputPath = path.join(uploadPath, uniqueName);
 
-    // Replace buffer & path info for request
-    processedFiles.push({
-      ...file,
-      filename: uniqueName,
-      path: outputPath,
-      size: fs.statSync(outputPath).size,
-    } as Express.Multer.File);
+          // Resize and compress with sharp
+          await sharp(file.buffer)
+            .resize({ width: 800 }) // Resize to width 800px
+            .jpeg({ quality: 70 })  // Compress to ~70% quality
+            .toFile(outputPath);
+
+          processedFiles.push({
+            ...file,
+            filename: uniqueName,
+            path: outputPath,
+            size: fs.statSync(outputPath).size,
+          } as Express.Multer.File);
+        }
+      }
+    }
+
+    // Overwrite req.files with the processed files array
+    req.files = processedFiles;
+    next();
+  } catch (err) {
+    next(err);
   }
-
-  req.files = processedFiles;
-  next();
 };
