@@ -1,12 +1,10 @@
 // src/middleware/upload.ts
 import multer, { FileFilterCallback } from 'multer';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
-import { cloudinary } from '../cloudinary/cloudinary';
 import path from 'path';
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "/var/www/private_data/uploads");
+    cb(null, '../../../private_data/uploads');
   },
   filename: (req, file, cb) => {
     const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -28,5 +26,5 @@ export const upload = multer({
       cb(new Error("Invalid file type"));
     }
   },
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 },
 });
