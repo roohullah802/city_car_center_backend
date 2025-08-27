@@ -712,9 +712,8 @@ export async function changeUserPassword(
       return;
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    user.password = hashedPassword;
+    user.password = newPassword;
     await user.save();
 
     // Optional: update Redis cache if you're caching user
