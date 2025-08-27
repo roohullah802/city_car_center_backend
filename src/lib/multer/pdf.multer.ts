@@ -1,18 +1,6 @@
 import multer from 'multer';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
-import { cloudinary } from '../cloudinary/cloudinary';
 
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: async (_req, file) => {
-    return {
-      folder: 'uploads',
-      format: file.mimetype.split('/')[1], // preserve original file format
-      allowed_formats: ['pdf'],
-      public_id: file.originalname.split('.')[0], // optional
-    };
-  },
-});
+const storage = multer.memoryStorage();
 
 const uploadPDF = multer({
   storage,

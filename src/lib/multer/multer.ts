@@ -3,7 +3,6 @@ import path from 'path';
 import fs from 'fs';
 import sharp from 'sharp';
 
-const uploadPath = path.join(__dirname, '../../../../../private_data/uploads');
 
 // Use memory storage
 const storage = multer.memoryStorage();
@@ -15,14 +14,14 @@ export const upload = multer({
     file: Express.Multer.File,
     cb: FileFilterCallback
   ): void => {
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp","image/jpg"];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(new Error("Invalid file type"));
     }
   },
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
 
 export const compressAndResize = async (req: any, res: any, next: any) => {
