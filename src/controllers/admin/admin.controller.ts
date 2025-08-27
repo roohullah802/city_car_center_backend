@@ -75,7 +75,7 @@ export async function carListing(req: Request, res: Response): Promise<void> {
     images,
   });
 
-  await redisClient.del(`cars`);
+  await redisClient.del(`AllCars:AllCars`);
   res.status(200).json({
     success: true,
     message: "Car registered successfully",
