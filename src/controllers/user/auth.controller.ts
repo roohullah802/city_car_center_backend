@@ -543,30 +543,38 @@ export async function resetPassword(
  */
 
 export async function userProfile(req: Request, res: Response): Promise<void> {
-  interface CloudinaryFile extends Express.Multer.File {
-    url?: string;
-    secure_url?: string;
+
+  interface UserData {
+    firstName: string,
+    lastName:string,
+    gender: string,
+    age: number
   }
+ 
 
   const userId = req.user?.userId;
-  const { firstName, lastName, gender, age } = req.body;
-  const pdf = req.file as CloudinaryFile;
+  const { fullName, gender, age } = req.body;
+  const pdf = req.file
+  console.log(pdf);
+  
 
   try {
-    const updatedData: any = {
+    if (!userId) {
+       res.status(400).json({
+        success: false,
+        message: "Unauthorized! please login user first.",
+      });
+      return;
+    }
+    const fName = fullName.split(' ');
+    const firstName = fName[0];
+    const lastName = fName[fName.length -1]
+    const updatedData: Partial<UserData> = {
       firstName,
       lastName,
       gender,
       age,
     };
-
-    // Attach PDF data if uploaded
-    if (pdf) {
-      updatedData.drivingLicence = {
-        url: pdf.path,
-        public_id: pdf.secure_url,
-      };
-    }
 
     const userProfile = await User.findByIdAndUpdate(userId, updatedData, {
       new: true,
@@ -580,7 +588,6 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // Cache updated profile in Redis for 1 day (86400 seconds)
     await redisClient.setEx(
       `user:${userProfile.email}`,
       86400,

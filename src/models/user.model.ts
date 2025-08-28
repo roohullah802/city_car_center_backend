@@ -1,17 +1,13 @@
 import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 
-type userPDF = {
-  url: string;
-  public_id: string;
-};
 export interface UserDocument extends Document {
   firstName: string;
   lastName: string;
   email: string;
   gender: string;
   age: number;
-  drivingLicence: userPDF;
+  drivingLicence: string;
   phoneNo: string;
   password: string;
   profile: string;
@@ -54,7 +50,7 @@ const userSchema = new Schema<UserDocument>(
     age: {
       type: Number,
     },
-    drivingLicence: userPDFSchema,
+    drivingLicence: {type:String},
     phoneNo: {
       type: String,
       required: true,

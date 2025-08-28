@@ -1,6 +1,7 @@
 import express from 'express'
 import { userSignup, userLogin, userLogout, verifyEmail, resendEmailOtp, forgotPassword, resetPassword, matchOtp, userProfile, changeUserPassword, resndCode } from '../../controllers/user/auth.controller'
 import { authMiddleware } from '../../middleware/auth.middleware'
+import uploadPDF from '../../lib/multer/pdf.multer'
 
 
 
@@ -14,7 +15,7 @@ userAuthRouter.route("/resend-otp").post(resendEmailOtp)
 userAuthRouter.route("/forgot-password").post(forgotPassword)
 userAuthRouter.route("/match-otp").post(matchOtp)
 userAuthRouter.route("/reset-password").post(resetPassword)
-userAuthRouter.route("/update/profile").post(authMiddleware, userProfile)
+userAuthRouter.route("/update/profile").post(authMiddleware,uploadPDF.single('file'), userProfile)
 userAuthRouter.route("/update/app/password").post(authMiddleware, changeUserPassword)
 userAuthRouter.route("/resnd-code").post(resndCode)
 
