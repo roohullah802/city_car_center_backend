@@ -34,6 +34,8 @@ const corsOptions = {
 
 
 const uploadsPath = path.join(__dirname, '../../../pdf/uploads');
+console.log(uploadsPath);
+
 app.use('/uploads', express.static(uploadsPath));
 app.use(cors(corsOptions));
 app.use(cookieParser());
