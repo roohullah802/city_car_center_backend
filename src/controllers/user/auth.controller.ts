@@ -9,6 +9,9 @@ import jwt from "jsonwebtoken";
 import { loginSchema } from "../../lib/zod/zod.login";
 import { resetPassSchema } from "../../lib/zod/zod.resetPass";
 import { emailQueue } from "../../lib/mail/emailQueues";
+import path from "path";
+import fs from 'fs/promises'
+import { json } from "body-parser";
 
 /**
  * @route   POST /api/auth/signup
@@ -548,14 +551,18 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
     firstName: string,
     lastName:string,
     gender: string,
-    age: number
+    age: number,
+    drivingLicence: string
+  }
+  if (!req.file || !req.file.buffer) {
+    res.status(400).json({success: false , message:"Pdf not provided"})
+    return;
   }
  
 
   const userId = req.user?.userId;
   const { fullName, gender, age } = req.body;
-  const pdf = req.file
-  console.log(pdf);
+  const file = req.file
   
 
   try {
@@ -566,6 +573,12 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
       });
       return;
     }
+    const filePath = path.join(__dirname, '../../../../../pdf', file?.originalname as string);
+    await fs.writeFile(filePath, file?.buffer);
+    const BASE_URL = "http://82.25.85.117/uploads/";
+    const pdf = `${BASE_URL}${file?.originalname}`;
+    
+
     const fName = fullName.split(' ');
     const firstName = fName[0];
     const lastName = fName[fName.length -1]
@@ -574,6 +587,7 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
       lastName,
       gender,
       age,
+      drivingLicence: pdf
     };
 
     const userProfile = await User.findByIdAndUpdate(userId, updatedData, {
