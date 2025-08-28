@@ -12,6 +12,7 @@ import { connectRedis } from "./src/lib/redis/redis";
 import "./src/lib/mail/reminder/leaseReminderWorker";
 import { leaseReminderQueue } from "./src/lib/mail/reminder/leaseReminderQueue";
 import "./src/lib/mail/email.Processor";
+import path from "path";
 
 dotenv.config();
 connectRedis();
@@ -31,6 +32,9 @@ const corsOptions = {
   credentials: true, // If you're using cookies or auth headers
 };
 
+
+const uploadsPath = path.join(__dirname, '../../../pdf/uploads');
+app.use('/uploads', express.static(uploadsPath));
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());
