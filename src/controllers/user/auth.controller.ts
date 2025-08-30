@@ -158,7 +158,7 @@ export async function userLogin(req: Request, res: Response): Promise<void> {
       .cookie("token", token, {
         httpOnly: true,
         secure: true,
-        sameSite: "None",
+        sameSite: "none",
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
       .status(200)
