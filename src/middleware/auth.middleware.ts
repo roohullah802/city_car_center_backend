@@ -5,12 +5,21 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 function authMiddleware(req: Request, res: Response, next: NextFunction): void {
-    const token = req.cookies?.token
+    const authorizationHeader = req.headers['authorization'];
+
+
    
-    if (!token){
-        res.status(401).json({ message: 'Access token missing' })
+    if (!authorizationHeader){
+        res.status(401).json({ message: 'Authorization header missing' })
         return;
     };
+
+    const token = authorizationHeader.split(' ')[1];
+
+     if (!token) {
+        res.status(401).json({ message: 'Bearer token missing' });
+        return;
+    }
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
