@@ -44,7 +44,7 @@ const userSchema = new Schema<UserDocument>(
     },
     gender: {
       type: String,
-      enum: ["Male", "Female"]
+      enum: ["Male", "Female", "Other"]
     },
     age: {
       type: Number,
