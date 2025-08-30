@@ -538,7 +538,6 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
       return;
     }
     const filePath = path.join(__dirname, '../../../../../pdf/uploads', file?.originalname as string);
-    console.log(filePath);
 
     await fs.writeFile(filePath, file?.buffer);
     const BASE_URL = "http://82.25.85.117/uploads/pdf/";
@@ -576,7 +575,7 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
     res.status(200).json({
       success: true,
       message: "User profile updated successfully.",
-      data: userProfile,
+      data: updatedProfile,
     });
   } catch (error) {
     console.error("Profile Update Error:", error);
