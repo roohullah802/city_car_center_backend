@@ -12,7 +12,6 @@ export interface UserDocument extends Document {
   password: string;
   profile: string;
   isVerified: boolean;
-  verificationCode: number | undefined;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -67,10 +66,6 @@ const userSchema = new Schema<UserDocument>(
     isVerified: {
       type: Boolean,
       default: false,
-    },
-    verificationCode: {
-      type: Number,
-      default: undefined,
     },
   },
   {

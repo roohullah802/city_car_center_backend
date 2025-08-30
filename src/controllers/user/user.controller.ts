@@ -109,7 +109,6 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
 
     const redisCars = await redisClient.get(redisKey);
     let allCars;
-
     if (redisCars) {
       allCars = JSON.parse(redisCars);
     } else {
@@ -140,9 +139,7 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
         return;
       }
 
-      await redisClient.set(redisKey, JSON.stringify(allCars), {
-        EX: 86400,
-      });
+      await redisClient.setEx(redisKey, 86400, JSON.stringify(allCars));
     }
 
     const totalCars = await Car.countDocuments();
@@ -195,13 +192,13 @@ export async function createLease(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const redisUser = await redisClient.get(`carAvailable:${carId}`);
+    const redisCars = await redisClient.get(`AllCars:AllCars`);
     let car;
-    if (redisUser) {
-      car = JSON.parse(redisUser);
+    if (redisCars) {
+      const allCars = JSON.parse(redisCars);
+      car = allCars.find((c: any) => c._id === carId);
     } else {
       car = await Car.findById(carId);
-
       if (!car) {
         res.status(404).json({
           success: false,
@@ -246,9 +243,20 @@ export async function createLease(req: Request, res: Response): Promise<void> {
       status: "pending",
     });
 
-    // Optionally mark car unavailable
     await Car.updateOne({ _id: carId }, { available: false });
-
+    if (redisCars) {
+      const allCars = JSON.parse(redisCars);
+      const updatedCars = allCars.map((c: any) =>
+        c._id === carId ? { ...c, available: false } : c
+      );
+      await redisClient.setEx(
+        `AllCars:AllCars`,
+        86400,
+        JSON.stringify(updatedCars)
+      );
+    }
+    await redisClient.hSet(`carDetails:${carId}`, 'available', 'false');
+    await redisClient.del(`leasePaymentHistory:${userId}`);
     const stripe = new Stripe(process.env.STRIPE_SERVER_KEY! as string, {
       apiVersion: "2025-05-28.basil",
     });
@@ -266,12 +274,6 @@ export async function createLease(req: Request, res: Response): Promise<void> {
 
     lease.paymentId = intent.id;
     await lease.save();
-    car.available = false;
-    await redisClient.set(`carAvailable:${carId}`, JSON.stringify(car), {
-      EX: 86400,
-    });
-    await redisClient.del(`leases:${userId}`);
-    await Car.findByIdAndUpdate(carId, { available: false });
     await emailQueue.add(
       "leaseConfirmationEmail",
       { leaseId: lease._id, startDate, endDate },
@@ -319,12 +321,7 @@ export async function extendLease(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const redisLease = await redisClient.get(`ExtendLease:${leaseId}`);
-    let lease;
-    if (redisLease) {
-      lease = JSON.parse(redisLease);
-    } else {
-      lease = await Lease.findById(leaseId).populate("car");
+    const lease = await Lease.findById(leaseId).populate("car");
 
       if (!lease) {
         res.status(404).json({
@@ -333,12 +330,8 @@ export async function extendLease(req: Request, res: Response): Promise<void> {
         });
         return;
       }
-      await redisClient.set(`ExtendLease:${leaseId}`, JSON.stringify(lease), {
-        EX: 86400,
-      });
-    }
 
-    if (lease.user.toString() !== userId) {
+    if (lease?.user.toString() !== userId) {
       res.status(403).json({
         success: false,
         message: "Unauthorized to modify this lease.",
@@ -346,7 +339,7 @@ export async function extendLease(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const car = lease.car as any;
+    const car = lease?.car as any;
 
     const oldEndDate = new Date(lease.endDate);
     const newEndDate = new Date(oldEndDate);
@@ -365,7 +358,7 @@ export async function extendLease(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const dailyRate = car.pricePerDay;
+    const dailyRate = car?.pricePerDay;
     const totalAmount = dailyRate * additionalDays * 100; // Stripe expects cents
     const stripe = new Stripe(process.env.STRIPE_SERVER_KEY! as string, {
       apiVersion: "2025-05-28.basil",
@@ -390,10 +383,6 @@ export async function extendLease(req: Request, res: Response): Promise<void> {
       { paymentId: paymentIntent.id }
     );
     await lease.save();
-    await redisClient.set(`ExtendLease:${leaseId}`, JSON.stringify(lease), {
-      EX: 86400,
-    });
-
     res.status(200).json({
       success: true,
       message: `Lease extended by ${additionalDays} day(s). Payment required.`,
@@ -446,10 +435,9 @@ export async function getPaymentDetails(
       leases = Object.values(redisPaymentHistory).map((item) =>
         JSON.parse(item)
       );
-      console.log("..");
+    
     } else {
       leases = await Lease.find({ user: userId }).populate("car");
-      console.log(".....");
 
       if (!leases.length) {
         res.status(200).json({
@@ -594,9 +582,8 @@ export async function returnCar(req: Request, res: Response): Promise<void> {
  */
 export async function getAllBrands(req: Request, res: Response): Promise<void> {
   try {
-    const redisBrands = await redisClient.get("carBrands");
+    const redisBrands = await redisClient.get("AllBrands:AllBrands");
     let brands;
-
     if (redisBrands) {
       brands = JSON.parse(redisBrands);
     } else {
@@ -624,7 +611,7 @@ export async function getAllBrands(req: Request, res: Response): Promise<void> {
         return;
       }
 
-      await redisClient.set("carBrands", JSON.stringify(brands), { EX: 86400 });
+      await redisClient.setEx("AllBrands:AllBrands",86400, JSON.stringify(brands));
     }
 
     res.status(200).json({
@@ -667,6 +654,9 @@ export async function getAllBrands(req: Request, res: Response): Promise<void> {
 //     }
 //   ])
 // }
+
+
+
 
 //  Get lease details by ID, with Redis caching
 export async function leaseDetails(req: Request, res: Response): Promise<void> {
@@ -911,9 +901,7 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    await redisClient.set(`leases:${userId}`, JSON.stringify(lease), {
-      EX: 60 * 60 * 24 * 4,
-    }); // 5 days
+    await redisClient.setEx(`leases:${userId}`,86400, JSON.stringify(lease));
 
     res
       .status(200)

@@ -11,7 +11,6 @@ import { resetPassSchema } from "../../lib/zod/zod.resetPass";
 import { emailQueue } from "../../lib/mail/emailQueues";
 import path from "path";
 import fs from 'fs/promises'
-import { json } from "body-parser";
 
 /**
  * @route   POST /api/auth/signup
@@ -60,10 +59,8 @@ export async function userSignup(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const code = Math.floor(100000 + Math.random() * 900000);
-
-    user.verificationCode = code;
     await user.save();
+    const code = Math.floor(100000 + Math.random() * 900000);
 
     await emailQueue.add(
       "sendVerificationEmail",
@@ -79,8 +76,8 @@ export async function userSignup(req: Request, res: Response): Promise<void> {
         },
       }
     );
-    console.log('sending queue');
-    
+
+    await redisClient.setEx(`verifyEmail:code`, 300, JSON.stringify(code));
     await redisClient.setEx(`user:${email}`, 86400, JSON.stringify(user));
 
     res.status(201).json({
@@ -95,7 +92,6 @@ export async function userSignup(req: Request, res: Response): Promise<void> {
       },
     });
   } catch (error) {
-    console.error("Signup error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error. Please try again.",
@@ -133,7 +129,6 @@ export async function userLogin(req: Request, res: Response): Promise<void> {
   try {
     const userInRedis = await redisClient.get(`user:${email}`);
     let user;
-
     if (userInRedis) {
       user = JSON.parse(userInRedis);
     } else {
@@ -218,40 +213,33 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    const redisUser = await redisClient.get(`user:${email}`);
-    let user;
-    if (redisUser) {
-      user = JSON.parse(redisUser);
-    } else {
-      user = await User.findOne({ email });
-      if (!user) {
-        res.status(404).json({ success: false, message: "User not found." });
-        return;
-      }
+    const redisCode = await redisClient.get(`verifyEmail:code`);
+    let rCode;
+    if (redisCode) {
+      rCode = JSON.parse(redisCode);
     }
 
-    if (user?.verificationCode !== code) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid or expired verification code.",
-      });
+    if (rCode !== code) {
+      res
+        .status(400)
+        .json({ success: false, message: "verification code doesn't match." });
       return;
     }
 
-    user.verificationCode = "";
-    user.isVerified = true;
-    await redisClient.set(`user:${email}`, JSON.stringify(user), {
-      EX: 86400,
-    });
-
-    await User.findOneAndUpdate(
+    const updatedUser = await User.findOneAndUpdate(
       { email: email },
       {
         $set: { isVerified: true },
-        $unset: { verificationCode: "" },
       },
       { new: true }
     );
+
+    if (!updatedUser) {
+      res.status(404).json({ success: false, message: "User not found." });
+      return;
+    }
+
+    await redisClient.setEx(`user:${email}`, 86400, JSON.stringify(updatedUser));
 
     res
       .status(200)
@@ -284,20 +272,23 @@ export async function resendEmailOtp(
   }
 
   try {
-    let user;
     const redisUser = await redisClient.get(`user:${email}`);
-
+    let user;
     if (redisUser) {
       user = JSON.parse(redisUser);
     } else {
       user = await User.findOne({ email });
       if (!user) {
-        res.status(404).json({ success: false, message: "User not found." });
+        res.status(400).json({
+          success: false,
+          message: "User not found.",
+        });
         return;
       }
+      await redisClient.setEx(`user:${email}`, 86400, JSON.stringify(user));
     }
 
-    if (user.isVerified) {
+    if (user?.isVerified) {
       res.status(400).json({
         success: false,
         message: "Email is already verified.",
@@ -307,18 +298,7 @@ export async function resendEmailOtp(
 
     const newCode = Math.floor(100000 + Math.random() * 900000);
 
-    user.verificationCode = newCode;
-
-    await redisClient.set(`user:${email}`, JSON.stringify(user), {
-      EX: 900,
-    });
-
-    await User.findOneAndUpdate(
-      { email },
-      {
-        verificationCode: newCode,
-      }
-    );
+    await redisClient.setEx(`verifyEmail:code`, 300, JSON.stringify(newCode));
 
     await emailQueue.add(
       "resendEmailOtp",
@@ -366,13 +346,12 @@ export async function forgotPassword(
   }
 
   try {
-    const redisUsr = await redisClient.get(`user:${email}`);
+    const redisUser = await redisClient.get(`user:${email}`);
     let user;
-    if (redisUsr) {
-      user = JSON.parse(redisUsr);
+    if (redisUser) {
+      user = JSON.parse(redisUser);
     } else {
       user = await User.findOne({ email });
-
       if (!user) {
         res.status(200).json({
           success: false,
@@ -380,25 +359,15 @@ export async function forgotPassword(
         });
         return;
       }
-    }
 
-    if (!user) {
-      res.status(400).json({ success: false, message: "User not found" });
-      return;
+      await redisClient.setEx(`user:${email}`, 86400, JSON.stringify(user));
     }
 
     const newCode = Math.floor(100000 + Math.random() * 900000);
-
-    user.verificationCode = newCode;
-    await redisClient.set(`user:${email}`, JSON.stringify(user), {
-      EX: 86400,
-    });
-    await User.findOneAndUpdate(
-      { email },
-      {
-        $set: { verificationCode: newCode },
-      },
-      { new: true }
+    await redisClient.setEx(
+      `forgotPasswordOtp:code`,
+      300,
+      JSON.stringify(newCode)
     );
     await emailQueue.add(
       "resendEmailOtp",
@@ -435,22 +404,15 @@ export async function matchOtp(req: Request, res: Response): Promise<void> {
     });
     return;
   }
-  const redisUser = await redisClient.get(`user:${email}`);
-  let user;
-  if (redisUser) {
-    user = JSON.parse(redisUser);
-  } else {
-    user = await User.findOne({ email: email });
-    if (!user) {
-      res.status(400).json({ success: false, message: "user not found" });
-      return;
-    }
+  const redisCode = await redisClient.get(`forgotPasswordOtp:code`);
+  let rCode;
+  if (redisCode) {
+    rCode = JSON.parse(redisCode);
   }
-
-  if (user.verificationCode !== code) {
+  if (rCode !== code) {
     res
       .status(400)
-      .json({ success: false, message: "password is not matched" });
+      .json({ success: false, message: "password doesn't matched" });
     return;
   }
 
@@ -515,17 +477,22 @@ export async function resetPassword(
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await User.findOneAndUpdate(
+    const updatedUser = await User.findOneAndUpdate(
       { email },
       {
         $set: { password: hashedPassword },
       },
       { new: true }
     );
-    user.password = hashedPassword;
-    await redisClient.set(`user:${email}`, JSON.stringify(user), {
-      EX: 86400,
-    });
+    if (!updatedUser) {
+      res.status(400).json({ success: false, message: "User not found" });
+      return;
+    }
+    await redisClient.setEx(
+      `user:${email}`,
+      86400,
+      JSON.stringify(updatedUser)
+    );
 
     res.status(200).json({
       success: true,
@@ -546,28 +513,25 @@ export async function resetPassword(
  */
 
 export async function userProfile(req: Request, res: Response): Promise<void> {
-
   interface UserData {
-    firstName: string,
-    lastName:string,
-    gender: string,
-    age: number,
-    drivingLicence: string
+    firstName: string;
+    lastName: string;
+    gender: string;
+    age: number;
+    drivingLicence: string;
   }
   if (!req.file || !req.file.buffer) {
-    res.status(400).json({success: false , message:"Pdf not provided"})
+    res.status(400).json({ success: false, message: "Pdf not provided" });
     return;
   }
- 
 
   const userId = req.user?.userId;
   const { fullName, gender, age } = req.body;
-  const file = req.file
-  
+  const file = req.file;
 
   try {
     if (!userId) {
-       res.status(400).json({
+      res.status(400).json({
         success: false,
         message: "Unauthorized! please login user first.",
       });
@@ -575,15 +539,14 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
     }
     const filePath = path.join(__dirname, '../../../../../pdf/uploads', file?.originalname as string);
     console.log(filePath);
-    
-    await fs.writeFile(filePath, file?.buffer);
-    const BASE_URL = "http://82.25.85.117/uploads/";
-    const pdf = `${BASE_URL}${file?.originalname}`;
-    
 
-    const fName = fullName.split(' ');
+    await fs.writeFile(filePath, file?.buffer);
+    const BASE_URL = "http://82.25.85.117/uploads/pdf/";
+    const pdf = `${BASE_URL}${file?.originalname}`;
+
+    const fName = fullName.split(" ");
     const firstName = fName[0];
-    const lastName = fName[fName.length -1]
+    const lastName = fName[fName.length - 1];
     const updatedData: Partial<UserData> = {
       firstName,
       lastName,
@@ -592,11 +555,11 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
       drivingLicence: pdf
     };
 
-    const userProfile = await User.findByIdAndUpdate(userId, updatedData, {
+    const updatedProfile = await User.findByIdAndUpdate(userId, updatedData, {
       new: true,
     });
 
-    if (!userProfile) {
+    if (!updatedProfile) {
       res.status(400).json({
         success: false,
         message: "Failed to update user profile. User not found.",
@@ -605,9 +568,9 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
     }
 
     await redisClient.setEx(
-      `user:${userProfile.email}`,
+      `user:${updatedProfile.email}`,
       86400,
-      JSON.stringify(userProfile)
+      JSON.stringify(updatedProfile)
     );
 
     res.status(200).json({
@@ -636,35 +599,8 @@ export async function resndCode(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    let user;
-    const redisUser = await redisClient.get(`user:${email}`);
-
-    if (redisUser) {
-      user = JSON.parse(redisUser);
-    } else {
-      user = await User.findOne({ email });
-      if (!user) {
-        res.status(404).json({ success: false, message: "User not found." });
-        return;
-      }
-    }
-
     const newCode = Math.floor(100000 + Math.random() * 900000);
-
-    user.verificationCode = newCode;
-
-    await redisClient.set(`user:${email}`, JSON.stringify(user), {
-      EX: 900,
-    });
-
-    await User.findOneAndUpdate(
-      { email },
-      {
-        verificationCode: newCode,
-      },
-      { new: true }
-    );
-
+    await redisClient.setEx(`forgotPasswordOtp:code`, 300, JSON.stringify(newCode));
     await emailQueue.add(
       "resendEmailOtp",
       { code: newCode },
@@ -734,7 +670,6 @@ export async function changeUserPassword(
       });
       return;
     }
-
 
     user.password = newPassword;
     await user.save();
