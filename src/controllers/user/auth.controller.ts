@@ -537,7 +537,7 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
     const filePath = path.join(__dirname, '../../../../../pdf/uploads', file?.originalname as string);
 
     await fs.writeFile(filePath, file?.buffer!);
-    const BASE_URL = "https://api.citycarcenters.com/uploads/pdf/";
+    const BASE_URL = "https://api.citycarcenters.com/uploads/";
     const pdf = `${BASE_URL}${file?.originalname}`;
 
     const fName = fullName.split(" ");
