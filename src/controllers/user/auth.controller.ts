@@ -520,10 +520,7 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
     age: number;
     drivingLicence: string;
   }
-  if (!req.file || !req.file.buffer) {
-    res.status(400).json({ success: false, message: "Pdf not provided" });
-    return;
-  }
+
 
   const userId = req.user?.userId;
   const { fullName, gender, age } = req.body;
@@ -539,7 +536,7 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
     }
     const filePath = path.join(__dirname, '../../../../../pdf/uploads', file?.originalname as string);
 
-    await fs.writeFile(filePath, file?.buffer);
+    await fs.writeFile(filePath, file?.buffer!);
     const BASE_URL = "https://api.citycarcenters.com/uploads/pdf/";
     const pdf = `${BASE_URL}${file?.originalname}`;
 
