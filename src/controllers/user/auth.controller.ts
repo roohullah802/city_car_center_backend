@@ -10,7 +10,7 @@ import { loginSchema } from "../../lib/zod/zod.login";
 import { resetPassSchema } from "../../lib/zod/zod.resetPass";
 import { emailQueue } from "../../lib/mail/emailQueues";
 import path from "path";
-import fs from 'fs/promises'
+import fs from "fs/promises";
 
 /**
  * @route   POST /api/auth/signup
@@ -239,7 +239,11 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    await redisClient.setEx(`user:${email}`, 86400, JSON.stringify(updatedUser));
+    await redisClient.setEx(
+      `user:${email}`,
+      86400,
+      JSON.stringify(updatedUser)
+    );
 
     res
       .status(200)
@@ -521,7 +525,6 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
     drivingLicence: string;
   }
 
-
   const userId = req.user?.userId;
   const { fullName, gender, age } = req.body;
   const file = req.file;
@@ -534,11 +537,18 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
       });
       return;
     }
-    const filePath = path.join(__dirname, '../../../../../pdf/uploads', file?.originalname as string);
+    const filePath = path.join(
+      __dirname,
+      "../../../../../pdf/uploads",
+      file?.originalname as string
+    );
 
-    await fs.writeFile(filePath, file?.buffer!);
-    const BASE_URL = "https://api.citycarcenters.com/uploads/";
-    const pdf = `${BASE_URL}${file?.originalname}`;
+    let pdf: string = '';
+    if (file?.buffer) {
+      await fs.writeFile(filePath, file?.buffer!);
+      const BASE_URL = "https://api.citycarcenters.com/uploads/";
+      pdf = `${BASE_URL}${file?.originalname}`;
+    }
 
     const fName = fullName.split(" ");
     const firstName = fName[0];
@@ -548,7 +558,7 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
       lastName,
       gender,
       age,
-      drivingLicence: pdf
+      drivingLicence: pdf,
     };
 
     const updatedProfile = await User.findByIdAndUpdate(userId, updatedData, {
@@ -596,7 +606,11 @@ export async function resndCode(req: Request, res: Response): Promise<void> {
 
   try {
     const newCode = Math.floor(100000 + Math.random() * 900000);
-    await redisClient.setEx(`forgotPasswordOtp:code`, 300, JSON.stringify(newCode));
+    await redisClient.setEx(
+      `forgotPasswordOtp:code`,
+      300,
+      JSON.stringify(newCode)
+    );
     await emailQueue.add(
       "resendEmailOtp",
       { code: newCode },
