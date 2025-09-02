@@ -21,7 +21,7 @@ export const upload = multer({
       cb(new Error("Invalid file type"));
     }
   },
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 20 * 1024 * 1024 }, // 10MB
 });
 
 export const compressAndResize = async (req: any, res: any, next: any) => {
