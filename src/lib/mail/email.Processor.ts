@@ -23,6 +23,8 @@ const worker = new Worker(
   "emailQueue",
   async (job: Job) => {
     const { to } = job.data;
+    console.log(to);
+    
     
 
     if (job.name === "sendVerificationEmail") {
