@@ -306,7 +306,7 @@ export async function resendEmailOtp(
 
     await emailQueue.add(
       "resendEmailOtp",
-      { code: newCode },
+      { code: newCode, to: email },
       {
         attempts: 3,
         backoff: {
@@ -375,7 +375,7 @@ export async function forgotPassword(
     );
     await emailQueue.add(
       "resendEmailOtp",
-      { code: newCode },
+      { code: newCode, to: email },
       {
         attempts: 3,
         backoff: {
@@ -609,7 +609,7 @@ export async function resndCode(req: Request, res: Response): Promise<void> {
     );
     await emailQueue.add(
       "resendEmailOtp",
-      { code: newCode },
+      { code: newCode, to:email },
       {
         attempts: 3,
         backoff: {

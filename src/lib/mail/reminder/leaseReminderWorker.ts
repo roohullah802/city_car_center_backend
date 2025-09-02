@@ -1,7 +1,6 @@
 import { Worker } from 'bullmq';
 import { Lease } from '../../../models/Lease.model';
 import { sendNotifyEmail } from '../node.cron.mailer';
-import {Redis} from 'ioredis'
 import {connection} from '../redis'
 
 export const leaseReminderWorker = new Worker(

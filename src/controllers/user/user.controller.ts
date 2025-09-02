@@ -166,6 +166,7 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
  */
 export async function createLease(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
+  const email = req.user?.email;
 
   try {
     if (!userId) {
@@ -276,7 +277,7 @@ export async function createLease(req: Request, res: Response): Promise<void> {
     await lease.save();
     await emailQueue.add(
       "leaseConfirmationEmail",
-      { leaseId: lease._id, startDate, endDate },
+      { leaseId: lease._id, startDate, endDate, to: email },
       {
         attempts: 3,
         backoff: {

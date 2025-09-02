@@ -1,5 +1,4 @@
 import { Worker, Job } from "bullmq";
-import { Redis } from "ioredis";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 dotenv.config();
@@ -22,10 +21,7 @@ const transporter = nodemailer.createTransport({
 const worker = new Worker(
   "emailQueue",
   async (job: Job) => {
-    const { to } = job.data;
-    console.log(to);
-    
-    
+    const { to } = job.data;  
 
     if (job.name === "sendVerificationEmail") {
       const { code } = job.data;
