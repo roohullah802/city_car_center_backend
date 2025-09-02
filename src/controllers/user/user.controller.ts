@@ -689,7 +689,7 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
 
     let leaseDetails;
     if (redisLeaseDetails) {
-      leaseDetails = redisLeaseDetails;
+      leaseDetails = JSON.parse(redisLeaseDetails);
     } else {
      
       leaseDetails = await Lease.aggregate([
