@@ -683,15 +683,15 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
     }
 
     // Try fetching lease details from Redis cache
-    const redisLeaseDetails = await redisClient.hGetAll(
+    const redisLeaseDetails = await redisClient.get(
       `leaseDetails:${leaseId}`
     );
 
     let leaseDetails;
-    if (Object.keys(redisLeaseDetails).length > 0) {
+    if (redisLeaseDetails) {
       leaseDetails = redisLeaseDetails;
     } else {
-      //  Cache miss — Fetch from MongoDB using aggregation
+     
       leaseDetails = await Lease.aggregate([
         {
           $match: { _id: new mongoose.Types.ObjectId(leaseId) },
@@ -708,15 +708,8 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
 
       // Store in Redis for caching
       const key = `leaseDetails:${leaseId}`;
-      const objHash: Record<string, string> = {};
-
-      for (const [key, value] of Object.entries(leaseDetails[0] || {})) {
-        objHash[key] =
-          typeof value === "object" ? JSON.stringify(value) : String(value);
-      }
-
-      await redisClient.hSet(key, objHash);
-      await redisClient.expire(key, 86400);
+      await redisClient.setEx(key, 86400, JSON.stringify(leaseDetails))
+      
     }
 
     res.status(200).json({
