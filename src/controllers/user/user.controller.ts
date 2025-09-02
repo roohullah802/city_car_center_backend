@@ -247,9 +247,11 @@ export async function createLease(req: Request, res: Response): Promise<void> {
     await Car.updateOne({ _id: carId }, { available: false });
     if (redisCars) {
       const allCars = JSON.parse(redisCars);
-      const updatedCars = allCars.map((c: any) =>
-        c._id === carId ? { ...c, available: false } : c
-      );
+      const updatedCars = allCars.find((c: any)=> c._id === carId);
+      if (updatedCars) {
+        updatedCars.available = false
+        return updatedCars
+      }
       await redisClient.setEx(
         `AllCars:AllCars`,
         86400,
