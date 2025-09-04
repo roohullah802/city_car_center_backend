@@ -43,10 +43,9 @@ app.use(
 );
 
 
-
+app.use('/api/payment', paymentRoutes);
 app.use(cors(corsOptions));
 app.use(cookieParser());
-app.use('/api/payment', paymentRoutes);
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
