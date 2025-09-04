@@ -12,6 +12,7 @@ import { connectRedis } from "./src/lib/redis/redis";
 import "./src/lib/mail/reminder/leaseReminderWorker";
 import { leaseReminderQueue } from "./src/lib/mail/reminder/leaseReminderQueue";
 import "./src/lib/mail/email.Processor";
+import paymentRoutes from './src/routers/payment/payment'
 
 dotenv.config();
 connectRedis();
@@ -32,6 +33,17 @@ const corsOptions = {
 };
 
 
+app.use(
+  (req, res, next) => {
+    if (req.originalUrl === "/api/payment/webhook") {
+      next();
+    } else {
+      bodyParser.json()(req, res, next);
+    }
+  }
+);
+
+
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());
@@ -40,6 +52,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/api/user/auth", userAuthRouter);
 app.use("/api/user", userRouter);
 app.use("/api/admin", adminRouter);
+app.use('/api/payment',paymentRoutes);
+
+
+
+
+
 const PORT = process.env.PORT || 5000;
 
 async function init() {
