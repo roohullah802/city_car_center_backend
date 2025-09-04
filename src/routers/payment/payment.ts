@@ -100,8 +100,8 @@ router.post(
       let lease;
       if (userId && carId) {
        lease =  await Lease.create({
-          userId, // 👈 save user
-          carId,  // 👈 save car
+          user: String(userId), 
+          car: String(carId), 
           amount: paymentIntent.amount / 100,
           paymentIntentId: paymentIntent.id,
           status: "completed",
