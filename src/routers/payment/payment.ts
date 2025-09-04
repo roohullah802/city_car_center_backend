@@ -6,6 +6,7 @@ import { Car } from "../../models/car.model";
 import { redisClient } from "../../lib/redis/redis";
 import { emailQueue } from "../../lib/mail/emailQueues";
 import { authMiddleware } from "../../middleware/auth.middleware";
+import mongoose from "mongoose";
 dotenv.config();
 
 const router = express.Router();
@@ -19,6 +20,7 @@ router.post("/create-payment-intent/:id",authMiddleware, async (req: Request, re
     const userId = req.user?.userId; // <-- from auth middleware
     const carId = req?.params.id;
     const { startDate, endDate } = req.body;
+    
 
 
 
@@ -29,7 +31,7 @@ router.post("/create-payment-intent/:id",authMiddleware, async (req: Request, re
 
      // ✅ Check if car already booked before creating payment
     const existingLease = await Lease.findOne({
-      car: carId,
+      car: new mongoose.Types.ObjectId(carId),
       status: "completed",
       $or: [
         {
