@@ -217,7 +217,7 @@ export async function createLease(req: Request, res: Response): Promise<void> {
       car: new mongoose.Types.ObjectId(carId),
       status: "completed",
       startDate: startDate,
-      totalAmount: 70,
+      totalAmount: car.pricePerDay * 7,
       endDate: endDate,
     });
 
