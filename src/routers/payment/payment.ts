@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { Car } from "../../models/car.model";
 import { redisClient } from "../../lib/redis/redis";
 import { emailQueue } from "../../lib/mail/emailQueues";
+import { authMiddleware } from "../../middleware/auth.middleware";
 dotenv.config();
 
 const router = express.Router();
@@ -13,7 +14,7 @@ const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
 });
 
 // ✅ Create a Payment Intent
-router.post("/create-payment-intent/:id", async (req: Request, res: Response): Promise<void> => {
+router.post("/create-payment-intent/:id",authMiddleware, async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user?.userId; // <-- from auth middleware
     const carId = req?.params.id;
