@@ -16,7 +16,8 @@ const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
 router.post("/create-payment-intent", async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user?.userId; // <-- from auth middleware
-    const { carId, startDate, endDate } = req.body;
+    const carId = req?.params.id;
+    const { startDate, endDate } = req.body;
 
 
 
