@@ -164,145 +164,130 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
  * @desc    Create a new lease agreement for a car
  * @access  Protected (requires authenticated user)
  */
-// export async function createLease(req: Request, res: Response): Promise<void> {
-//   const userId = req.user?.userId;
-//   const email = req.user?.email;
+export async function createLease(req: Request, res: Response): Promise<void> {
+  const userId = req.user?.userId;
+  const email = req.user?.email;
 
-//   try {
-//     if (!userId) {
-//       res.status(401).json({
-//         success: false,
-//         message: "Unauthorized. Please log in to create a lease.",
-//       });
-//       return;
-//     }
+  try {
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized. Please log in to create a lease.",
+      });
+      return;
+    }
 
-//     type DateType = {
-//       startDate: string;
-//       endDate: string;
-//     };
+    type DateType = {
+      startDate: string;
+      endDate: string;
+    };
 
-//     const { startDate, endDate } = req.body as DateType;
-//     const carId = req.params?.id as string;
+    const { startDate, endDate } = req.body as DateType;
+    const carId = req.params?.id as string;
 
-//     if (!carId || !startDate || !endDate) {
-//       res.status(400).json({
-//         success: false,
-//         message: "carId, startDate, and endDate are required.",
-//       });
-//       return;
-//     }
+    if (!carId || !startDate || !endDate) {
+      res.status(400).json({
+        success: false,
+        message: "carId, startDate, and endDate are required.",
+      });
+      return;
+    }
 
-//     const redisCars = await redisClient.get(`AllCars:AllCars`);
-//     let car;
-//     if (redisCars) {
-//       const allCars = JSON.parse(redisCars);
-//       car = allCars.find((c: any) => c._id === carId);
-//     } else {
-//       car = await Car.findById(carId);
-//       if (!car) {
-//         res.status(404).json({
-//           success: false,
-//           message: "Car not found.",
-//         });
-//         return;
-//       }
-//     }
+    const redisCars = await redisClient.get(`AllCars:AllCars`);
+    let car;
+    if (redisCars) {
+      const allCars = JSON.parse(redisCars);
+      car = allCars.find((c: any) => c._id === carId);
+    } else {
+      car = await Car.findById(carId);
+      if (!car) {
+        res.status(404).json({
+          success: false,
+          message: "Car not found.",
+        });
+        return;
+      }
+    }
 
-//     if (!car.available) {
-//       res.status(400).json({
-//         success: false,
-//         message: "This car is currently not available for lease.",
-//       });
-//       return;
-//     }
+    if (!car.available) {
+      res.status(400).json({
+        success: false,
+        message: "This car is currently not available for lease.",
+      });
+      return;
+    }
 
-//     // Enforce 7-day lease only
-//     const start = new Date(startDate as string);
-//     const end = new Date(endDate as string);
-//     const dayDifference = Math.ceil(
-//       (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-//     );
+    // Enforce 7-day lease only
+    const start = new Date(startDate as string);
+    const end = new Date(endDate as string);
+    const dayDifference = Math.ceil(
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
-//     if (dayDifference !== 7) {
-//       res.status(400).json({
-//         success: false,
-//         message: "The first lease must be exactly 7 days long.",
-//       });
-//       return;
-//     }
+    if (dayDifference !== 7) {
+      res.status(400).json({
+        success: false,
+        message: "The first lease must be exactly 7 days long.",
+      });
+      return;
+    }
 
-//     const totalAmount = (car.pricePerDay as number) * 7;
+    const totalAmount = (car.pricePerDay as number) * 7;
 
-//     const lease = await Lease.create({
-//       user: new mongoose.Types.ObjectId(userId),
-//       car: new mongoose.Types.ObjectId(carId),
-//       startDate: start,
-//       endDate: end,
-//       totalAmount,
-//       returnedDate: end,
-//       status: "pending",
-//     });
+    const lease = await Lease.create({
+      user: new mongoose.Types.ObjectId(userId),
+      car: new mongoose.Types.ObjectId(carId),
+      startDate: start,
+      endDate: end,
+      totalAmount,
+      returnedDate: end,
+      status: "completed",
+    });
 
-//     await Car.updateOne({ _id: carId }, { available: false });
-//     if (redisCars) {
-//       const allCars = JSON.parse(redisCars);
-//       const updatedCars = allCars.find((c: any)=> c._id === carId);
-//       if (updatedCars) {
-//         updatedCars.available = false
-//         return updatedCars
-//       }
-//       await redisClient.setEx(
-//         `AllCars:AllCars`,
-//         86400,
-//         JSON.stringify(updatedCars)
-//       );
-//     }
-//     await redisClient.hSet(`carDetails:${carId}`, 'available', 'false');
-//     await redisClient.del(`leasePaymentHistory:${userId}`);
-//     const stripe = new Stripe(process.env.STRIPE_SERVER_KEY! as string, {
-//       apiVersion: "2025-05-28.basil",
-//     });
+    await Car.updateOne({ _id: carId }, { available: false });
+    if (redisCars) {
+      const allCars = JSON.parse(redisCars);
+      const updatedCars = allCars.find((c: any)=> c._id === carId);
+      if (updatedCars) {
+        updatedCars.available = false
+        return updatedCars
+      }
+      await redisClient.setEx(
+        `AllCars:AllCars`,
+        86400,
+        JSON.stringify(updatedCars)
+      );
+    }
+    await redisClient.hSet(`carDetails:${carId}`, 'available', 'false');
+    await redisClient.del(`leasePaymentHistory:${userId}`);
 
-//     const intent = await stripe.paymentIntents.create({
-//       amount: Math.round(totalAmount * 100),
-//       currency: "usd",
-//       payment_method_types: ["card"],
-//       metadata: {
-//         carId: carId,
-//         userId: userId,
-//         leaseId: String(lease._id),
-//       },
-//     });
 
-//     lease.paymentId = intent.id;
-//     await lease.save();
-//     await emailQueue.add(
-//       "leaseConfirmationEmail",
-//       { leaseId: lease._id, startDate, endDate, to: email },
-//       {
-//         attempts: 3,
-//         backoff: {
-//           type: "exponential",
-//           delay: 5000,
-//         },
-//       }
-//     );
+    await lease.save();
+    await emailQueue.add(
+      "leaseConfirmationEmail",
+      { leaseId: lease._id, startDate, endDate, to: email },
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 5000,
+        },
+      }
+    );
 
-//     res.status(201).json({
-//       success: true,
-//       message: "Lease created successfully for 7 days.",
-//       data: lease,
-//       client_secret: intent.client_secret,
-//     });
-//   } catch (error) {
-//     console.error("Lease creation error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal server error while creating lease.",
-//     });
-//   }
-// }
+    res.status(201).json({
+      success: true,
+      message: "Lease created successfully for 7 days.",
+      data: lease
+    });
+  } catch (error) {
+    console.error("Lease creation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error while creating lease.",
+    });
+  }
+}
 
 /**
  * @route   POST /api/lease/extend

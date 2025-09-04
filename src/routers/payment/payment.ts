@@ -75,80 +75,82 @@ router.post("/create-payment-intent/:id",authMiddleware, async (req: Request, re
   }
 });
 
-// ✅ Stripe Webhook (secure confirmation)
-router.post(
-  "/webhook",
-  express.raw({ type: "application/json" }),
-  async (req: Request, res: Response): Promise<void> => {
-    const sig = req.headers["stripe-signature"] as string;
 
-    let event: Stripe.Event;
-    try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        sig,
-        process.env.STRIPE_WEBHOOK_SECRET as string
-      );
-    } catch (err: any) {
-      res.status(400).send(`Webhook Error: ${err.message}`);
-      return;
-    }
 
-    if (event.type === "payment_intent.succeeded") {
-      const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
-      // ✅ Read metadata values
-      const { userId, carId, startDate, endDate, email } = paymentIntent.metadata;
+// router.post(
+//   "/webhook",
+//   express.raw({ type: "application/json" }),
+//   async (req: Request, res: Response): Promise<void> => {
+//     const sig = req.headers["stripe-signature"] as string;
 
-      let lease;
-      if (userId && carId) {
-       lease =  await Lease.create({
-          user: userId, 
-          car: carId, 
-          amount: paymentIntent.amount / 100,
-          paymentIntentId: paymentIntent.id,
-          status: "completed",
-          startDate: new Date(startDate),
-          endDate: new Date(endDate),
-        });
+//     let event: Stripe.Event;
+//     try {
+//       event = stripe.webhooks.constructEvent(
+//         req.body,
+//         sig,
+//         process.env.STRIPE_WEBHOOK_SECRET as string
+//       );
+//     } catch (err: any) {
+//       res.status(400).send(`Webhook Error: ${err.message}`);
+//       return;
+//     }
 
-        await Car.findByIdAndUpdate(carId, {
-            available: false
-        }, {new: true});
+//     if (event.type === "payment_intent.succeeded") {
+//       const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
-        const redisCars = await redisClient.get('AllCars:AllCars');
-        if (redisCars) {
-            const allCars = JSON.parse(redisCars);
-            const cars = allCars.find((c:any)=> c._id === carId);
-            if (cars) {
-                cars.available = false
-                return cars
-            }
-        }
-        await redisClient.hSet(`carDetails:${carId}`, 'available', 'false');
-        await redisClient.del(`leasePaymentHistory:${userId}`);
+//       // ✅ Read metadata values
+//       const { userId, carId, startDate, endDate, email } = paymentIntent.metadata;
 
-        await emailQueue.add(
-              "leaseConfirmationEmail",
-              { leaseId: lease._id, startDate, endDate, to: email },
-              {
-                attempts: 3,
-                backoff: {
-                  type: "exponential",
-                  delay: 5000,
-                },
-              }
-            );
+//       let lease;
+//       if (userId && carId) {
+//        lease =  await Lease.create({
+//           user: userId, 
+//           car: carId, 
+//           amount: paymentIntent.amount / 100,
+//           paymentIntentId: paymentIntent.id,
+//           status: "completed",
+//           startDate: new Date(startDate),
+//           endDate: new Date(endDate),
+//         });
+
+//         await Car.findByIdAndUpdate(carId, {
+//             available: false
+//         }, {new: true});
+
+//         const redisCars = await redisClient.get('AllCars:AllCars');
+//         if (redisCars) {
+//             const allCars = JSON.parse(redisCars);
+//             const cars = allCars.find((c:any)=> c._id === carId);
+//             if (cars) {
+//                 cars.available = false
+//                 return cars
+//             }
+//         }
+//         await redisClient.hSet(`carDetails:${carId}`, 'available', 'false');
+//         await redisClient.del(`leasePaymentHistory:${userId}`);
+
+//         await emailQueue.add(
+//               "leaseConfirmationEmail",
+//               { leaseId: lease._id, startDate, endDate, to: email },
+//               {
+//                 attempts: 3,
+//                 backoff: {
+//                   type: "exponential",
+//                   delay: 5000,
+//                 },
+//               }
+//             );
         
         
 
 
 
-      }
-    }
+//       }
+//     }
 
-    res.status(200).json({success: true, message:"Lease created successfully"});
-  }
-);
+//     res.status(200).json({success: true, message:"Lease created successfully"});
+//   }
+// );
 
 export default router;
