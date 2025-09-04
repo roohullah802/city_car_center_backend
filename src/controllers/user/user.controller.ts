@@ -192,59 +192,17 @@ export async function createLease(req: Request, res: Response): Promise<void> {
       });
       return;
     }
-
-    const redisCars = await redisClient.get(`AllCars:AllCars`);
-    let car;
-    if (redisCars) {
-      const allCars = JSON.parse(redisCars);
-      car = allCars.find((c: any) => c._id === carId);
-    } else {
-      car = await Car.findById(carId);
-      if (!car) {
-        res.status(404).json({
-          success: false,
-          message: "Car not found.",
-        });
-        return;
-      }
-    }
-
-    if (!car.available) {
-      res.status(400).json({
-        success: false,
-        message: "This car is currently not available for lease.",
-      });
-      return;
-    }
-
-    // Enforce 7-day lease only
-    const start = new Date(startDate as string);
-    const end = new Date(endDate as string);
-    const dayDifference = Math.ceil(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    if (dayDifference !== 7) {
-      res.status(400).json({
-        success: false,
-        message: "The first lease must be exactly 7 days long.",
-      });
-      return;
-    }
-
-    const totalAmount = (car.pricePerDay as number) * 7;
+    
 
     const lease = await Lease.create({
       user: new mongoose.Types.ObjectId(userId),
       car: new mongoose.Types.ObjectId(carId),
-      startDate: start,
-      endDate: end,
-      totalAmount,
-      returnedDate: end,
       status: "completed",
     });
 
     await Car.updateOne({ _id: carId }, { available: false });
+    const redisCars = await redisClient.get(`AllCars:AllCars`);
+    
     if (redisCars) {
       const allCars = JSON.parse(redisCars);
       const updatedCars = allCars.find((c: any)=> c._id === carId);
