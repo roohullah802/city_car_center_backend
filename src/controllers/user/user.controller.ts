@@ -219,7 +219,6 @@ export async function createLease(req: Request, res: Response): Promise<void> {
     await redisClient.hSet(`carDetails:${carId}`, "available", "false");
     await redisClient.del(`leasePaymentHistory:${userId}`);
 
-    await lease.save();
     await emailQueue.add(
       "leaseConfirmationEmail",
       { leaseId: lease._id, startDate, endDate, to: email },
