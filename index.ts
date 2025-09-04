@@ -32,10 +32,6 @@ const corsOptions = {
   credentials: true, // If you're using cookies or auth headers
 };
 
-
-
-
-app.use('/api/payment',paymentRoutes);
 app.use(
   (req, res, next) => {
     if (req.originalUrl === "/api/payment/webhook") {
@@ -45,14 +41,19 @@ app.use(
     }
   }
 );
+
+
+
 app.use(cors(corsOptions));
 app.use(cookieParser());
+app.use('/api/payment', paymentRoutes);
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/api/user/auth", userAuthRouter);
 app.use("/api/user", userRouter);
 app.use("/api/admin", adminRouter);
+
 
 
 
