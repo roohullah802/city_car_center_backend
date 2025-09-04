@@ -192,33 +192,32 @@ export async function createLease(req: Request, res: Response): Promise<void> {
       });
       return;
     }
-    
 
     const lease = await Lease.create({
       user: new mongoose.Types.ObjectId(userId),
       car: new mongoose.Types.ObjectId(carId),
       status: "completed",
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
     });
 
     await Car.updateOne({ _id: carId }, { available: false });
     const redisCars = await redisClient.get(`AllCars:AllCars`);
-    
+
     if (redisCars) {
       const allCars = JSON.parse(redisCars);
-      const updatedCars = allCars.find((c: any)=> c._id === carId);
+      const updatedCars = allCars.find((c: any) => c._id === carId);
       if (updatedCars) {
-        updatedCars.available = false
-        return updatedCars
+        updatedCars.available = false;
+        await redisClient.setEx(
+          `AllCars:AllCars`,
+          86400,
+          JSON.stringify(updatedCars)
+        );
       }
-      await redisClient.setEx(
-        `AllCars:AllCars`,
-        86400,
-        JSON.stringify(updatedCars)
-      );
     }
-    await redisClient.hSet(`carDetails:${carId}`, 'available', 'false');
+    await redisClient.hSet(`carDetails:${carId}`, "available", "false");
     await redisClient.del(`leasePaymentHistory:${userId}`);
-
 
     await lease.save();
     await emailQueue.add(
@@ -236,7 +235,7 @@ export async function createLease(req: Request, res: Response): Promise<void> {
     res.status(201).json({
       success: true,
       message: "Lease created successfully for 7 days.",
-      data: lease
+      data: lease,
     });
   } catch (error) {
     console.error("Lease creation error:", error);
@@ -269,13 +268,13 @@ export async function extendLease(req: Request, res: Response): Promise<void> {
 
     const lease = await Lease.findById(leaseId).populate("car");
 
-      if (!lease) {
-        res.status(404).json({
-          success: false,
-          message: "Lease not found.",
-        });
-        return;
-      }
+    if (!lease) {
+      res.status(404).json({
+        success: false,
+        message: "Lease not found.",
+      });
+      return;
+    }
 
     if (lease?.user.toString() !== userId) {
       res.status(403).json({
@@ -381,7 +380,6 @@ export async function getPaymentDetails(
       leases = Object.values(redisPaymentHistory).map((item) =>
         JSON.parse(item)
       );
-    
     } else {
       leases = await Lease.find({ user: userId }).populate("car");
 
@@ -557,7 +555,11 @@ export async function getAllBrands(req: Request, res: Response): Promise<void> {
         return;
       }
 
-      await redisClient.setEx("AllBrands:AllBrands",86400, JSON.stringify(brands));
+      await redisClient.setEx(
+        "AllBrands:AllBrands",
+        86400,
+        JSON.stringify(brands)
+      );
     }
 
     res.status(200).json({
@@ -601,9 +603,6 @@ export async function getAllBrands(req: Request, res: Response): Promise<void> {
 //   ])
 // }
 
-
-
-
 //  Get lease details by ID, with Redis caching
 export async function leaseDetails(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId as string;
@@ -628,15 +627,12 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
     }
 
     // Try fetching lease details from Redis cache
-    const redisLeaseDetails = await redisClient.get(
-      `leaseDetails:${leaseId}`
-    );
+    const redisLeaseDetails = await redisClient.get(`leaseDetails:${leaseId}`);
 
     let leaseDetails;
     if (redisLeaseDetails) {
       leaseDetails = JSON.parse(redisLeaseDetails);
     } else {
-     
       leaseDetails = await Lease.aggregate([
         {
           $match: { _id: new mongoose.Types.ObjectId(leaseId) },
@@ -653,8 +649,7 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
 
       // Store in Redis for caching
       const key = `leaseDetails:${leaseId}`;
-      await redisClient.setEx(key, 86400, JSON.stringify(leaseDetails))
-      
+      await redisClient.setEx(key, 86400, JSON.stringify(leaseDetails));
     }
 
     res.status(200).json({
@@ -840,7 +835,7 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    await redisClient.setEx(`leases:${userId}`,86400, JSON.stringify(lease));
+    await redisClient.setEx(`leases:${userId}`, 86400, JSON.stringify(lease));
 
     res
       .status(200)
