@@ -198,18 +198,18 @@ export async function createLease(req: Request, res: Response): Promise<void> {
     }
 
     // Check if car is already booked for overlapping dates
-    const existingLease = await Lease.findOne({
-      car: new mongoose.Types.ObjectId(carId),
-      status: "completed",
-      $or: [
-        { startDate: { $lte: new Date(endDate) }, endDate: { $gte: new Date(startDate) } },
-      ],
-    });
+    // const existingLease = await Lease.findOne({
+    //   car: new mongoose.Types.ObjectId(carId),
+    //   status: "completed",
+    //   $or: [
+    //     { startDate: { $lte: new Date(endDate) }, endDate: { $gte: new Date(startDate) } },
+    //   ],
+    // });
 
-    if (existingLease) {
-      res.status(409).json({ success: false, message: "Car not available for these dates" });
-      return;
-    }
+    // if (existingLease) {
+    //   res.status(409).json({ success: false, message: "Car not available for these dates" });
+    //   return;
+    // }
 
     // Create lease
     const lease = await Lease.create({
@@ -221,20 +221,20 @@ export async function createLease(req: Request, res: Response): Promise<void> {
     });
 
     // Update car availability
-    await Car.updateOne({ _id: carId }, { available: false });
+    // await Car.updateOne({ _id: carId }, { available: false });
 
     // Update Redis cache
-    const redisCars = await redisClient.get("AllCars:AllCars");
-    if (redisCars) {
-      const allCars = JSON.parse(redisCars);
-      const carIndex = allCars.findIndex((c: any) => c._id === carId);
-      if (carIndex !== -1) {
-        allCars[carIndex].available = false;
-        await redisClient.setEx("AllCars:AllCars", 86400, JSON.stringify(allCars));
-      }
-    }
-    await redisClient.hSet(`carDetails:${carId}`, "available", "false");
-    await redisClient.del(`leasePaymentHistory:${userId}`);
+    // const redisCars = await redisClient.get("AllCars:AllCars");
+    // if (redisCars) {
+    //   const allCars = JSON.parse(redisCars);
+    //   const carIndex = allCars.findIndex((c: any) => c._id === carId);
+    //   if (carIndex !== -1) {
+    //     allCars[carIndex].available = false;
+    //     await redisClient.setEx("AllCars:AllCars", 86400, JSON.stringify(allCars));
+    //   }
+    // }
+    // await redisClient.hSet(`carDetails:${carId}`, "available", "false");
+    // await redisClient.del(`leasePaymentHistory:${userId}`);
 
     // Send lease confirmation email
     await emailQueue.add(
