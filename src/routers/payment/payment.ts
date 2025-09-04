@@ -30,8 +30,9 @@ router.post("/create-payment-intent/:id",authMiddleware, async (req: Request, re
     }
 
      // ✅ Check if car already booked before creating payment
+     const validCarId = carId.replace(/"/g, ''); // remove quotes
     const existingLease = await Lease.findOne({
-      car: new mongoose.Types.ObjectId(carId),
+      car: new mongoose.Types.ObjectId(validCarId),
       status: "completed",
       $or: [
         {
