@@ -194,8 +194,8 @@ export async function createLease(req: Request, res: Response): Promise<void> {
     }
 
     const lease = await Lease.create({
-      user: new mongoose.Types.ObjectId(userId),
-      car: new mongoose.Types.ObjectId(carId),
+      user: userId,
+      car:  carId,
       status: "completed",
       startDate: new Date(startDate),
       endDate: new Date(endDate),
