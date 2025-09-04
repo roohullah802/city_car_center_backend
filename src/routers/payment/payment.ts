@@ -102,9 +102,10 @@ router.post(
 
       let lease;
       if (userId && carId) {
+        const validCarId = carId.replace(/"/g, '');
        lease =  await Lease.create({
           user: userId, 
-          car: carId, 
+          car: validCarId, 
           amount: paymentIntent.amount / 100,
           paymentIntentId: paymentIntent.id,
           status: "completed",
