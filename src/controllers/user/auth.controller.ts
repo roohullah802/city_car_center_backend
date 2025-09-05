@@ -692,7 +692,6 @@ export async function changeUserPassword(
       message: "Password changed successfully.",
     });
   } catch (error) {
-    console.error("Password change error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error.",

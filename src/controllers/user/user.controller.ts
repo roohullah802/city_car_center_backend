@@ -168,7 +168,10 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
 export async function createLease(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
   const email = req.user?.email;
-  const { startDate, endDate } = req.body as { startDate: string; endDate: string };
+  const { startDate, endDate } = req.body as {
+    startDate: string;
+    endDate: string;
+  };
   const carId = req.params?.id as string;
 
   try {
@@ -202,12 +205,17 @@ export async function createLease(req: Request, res: Response): Promise<void> {
       car: new mongoose.Types.ObjectId(carId),
       status: "completed",
       $or: [
-        { startDate: { $lte: new Date(endDate) }, endDate: { $gte: new Date(startDate) } },
+        {
+          startDate: { $lte: new Date(endDate) },
+          endDate: { $gte: new Date(startDate) },
+        },
       ],
     });
 
     if (existingLease) {
-      res.status(409).json({ success: false, message: "Car not available for these dates" });
+      res
+        .status(409)
+        .json({ success: false, message: "Car not available for these dates" });
       return;
     }
 
@@ -222,18 +230,24 @@ export async function createLease(req: Request, res: Response): Promise<void> {
     });
 
     // Update car availability
-    await Car.updateOne({ _id: carId }, { available: false });
+    await Car.findByIdAndUpdate(carId, { available: false });
 
     // Update Redis cache
     const redisCars = await redisClient.get("AllCars:AllCars");
     if (redisCars) {
       const allCars = JSON.parse(redisCars);
       const carIndex = allCars.findIndex((c: any) => c._id === carId);
+
       if (carIndex !== -1) {
         allCars[carIndex].available = false;
-        await redisClient.setEx("AllCars:AllCars", 86400, JSON.stringify(allCars));
+        await redisClient.setEx(
+          "AllCars:AllCars",
+          86400,
+          JSON.stringify(allCars)
+        );
       }
     }
+
     await redisClient.hSet(`carDetails:${carId}`, "available", "false");
     await redisClient.del(`leasePaymentHistory:${userId}`);
 
@@ -260,7 +274,6 @@ export async function createLease(req: Request, res: Response): Promise<void> {
     });
   }
 }
-
 
 /**
  * @route   POST /api/lease/extend
@@ -834,7 +847,7 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
 
     const lease = await Lease.aggregate([
       {
-        $match: {user: new mongoose.Types.ObjectId(userId)},
+        $match: { user: new mongoose.Types.ObjectId(userId) },
       },
       {
         $lookup: {
