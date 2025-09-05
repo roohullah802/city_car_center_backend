@@ -834,7 +834,7 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
 
     const lease = await Lease.aggregate([
       {
-        $match: {},
+        $match: {user: new mongoose.Types.ObjectId(userId)},
       },
       {
         $lookup: {
