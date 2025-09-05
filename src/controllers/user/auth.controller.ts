@@ -537,6 +537,10 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
       });
       return;
     }
+    if (!fullName || !gender || !age) {
+      res.status(400).json({success: false, message:"please provide required fileds"})
+      return;
+    }
 
     let pdf: string = "";
     if (file?.buffer) {

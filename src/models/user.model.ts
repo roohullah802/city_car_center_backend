@@ -44,10 +44,12 @@ const userSchema = new Schema<UserDocument>(
     },
     gender: {
       type: String,
-      enum: ["Male", "Female", "Other"]
+      enum: ["Male", "Female", "Other"],
+      required: true
     },
     age: {
       type: Number,
+      required: true
     },
     drivingLicence: {type:String},
     phoneNo: {
@@ -61,7 +63,8 @@ const userSchema = new Schema<UserDocument>(
       minlength: 6,
     },
     profile:{
-      type: String
+      type: String,
+      required:true
     },
     isVerified: {
       type: Boolean,
