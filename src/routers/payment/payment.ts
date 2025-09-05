@@ -59,7 +59,7 @@ router.post(
       if (!car.available) {
         res.status(400).json({
           success: false,
-          message: "This car is currently not available for lease.",
+          message: "We're sorry, but this car is currently unavailable for lease.",
         });
         return;
       }

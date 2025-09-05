@@ -267,7 +267,6 @@ export async function createLease(req: Request, res: Response): Promise<void> {
       data: lease,
     });
   } catch (error: any) {
-    console.error("Lease creation error:", error.message, error.stack);
     res.status(500).json({
       success: false,
       message: "Internal server error while creating lease.",
@@ -863,7 +862,7 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
       res.status(404).json({ success: false, message: "No lease data found" });
       return;
     }
-
+    
     await redisClient.setEx(`leases:${userId}`, 86400, JSON.stringify(lease));
 
     res
