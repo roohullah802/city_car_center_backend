@@ -43,7 +43,7 @@ export async function userSignup(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const user = new User({
+    const user = await User.create({
       firstName,
       lastName,
       email,
@@ -59,7 +59,6 @@ export async function userSignup(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    await user.save();
     const code = Math.floor(100000 + Math.random() * 900000);
 
     await emailQueue.add(
