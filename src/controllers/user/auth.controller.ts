@@ -91,6 +91,8 @@ export async function userSignup(req: Request, res: Response): Promise<void> {
       },
     });
   } catch (error) {
+    console.log(error);
+    
     res.status(500).json({
       success: false,
       message: "Internal server error. Please try again.",
