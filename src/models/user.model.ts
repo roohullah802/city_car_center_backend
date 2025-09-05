@@ -45,7 +45,6 @@ const userSchema = new Schema<UserDocument>(
     gender: {
       type: String,
       enum: ["Male", "Female", "Other"],
-      required: true
     },
     age: {
       type: Number,
