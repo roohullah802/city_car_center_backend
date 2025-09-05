@@ -49,12 +49,10 @@ const userSchema = new Schema<UserDocument>(
     },
     age: {
       type: Number,
-      required: true
     },
     drivingLicence: {type:String},
     phoneNo: {
       type: String,
-      required: true,
       trim: true,
     },
     password: {
@@ -64,7 +62,6 @@ const userSchema = new Schema<UserDocument>(
     },
     profile:{
       type: String,
-      required:true
     },
     isVerified: {
       type: Boolean,
