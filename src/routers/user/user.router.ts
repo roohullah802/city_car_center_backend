@@ -5,8 +5,8 @@ import uploadPDF from '../../lib/multer/pdf.multer'
 const userRouter = express.Router()
 
 userRouter.route("/car/details/:id").get(authMiddleware, getCarDetails)
-userRouter.route("/all/cars").get(authMiddleware, getAllCars)
-userRouter.route("/all/brands").get(authMiddleware, getAllBrands)
+userRouter.route("/all/cars").get(getAllCars)
+userRouter.route("/all/brands").get(getAllBrands)
 userRouter.route("/car/extend-lease/:id").post(authMiddleware, extendLease)
 userRouter.route("/create-lease/:id").post(authMiddleware, createLease)
 userRouter.route("/car/payment/history").get(authMiddleware, getPaymentDetails)
