@@ -49,7 +49,7 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
     }
 
     const token = signToken(user);
-    res.json({ token, user });
+    res.status(200).json({success: true, token, user });
   } catch (err: any) {
     console.error("Google auth error", err.response?.data || err.message);
     res.status(401).json({ success: false, message: "Invalid Google token" });
@@ -112,7 +112,7 @@ export async function appleAuth(req: Request, res: Response): Promise<void> {
     }
 
     const token = signToken(user);
-    res.json({ token, user });
+    res.status(200).json({success: true, token, user });
   } catch (err:any) {
     console.error("Apple auth error", err.message);
     res.status(401).json({ message: "Invalid Apple token" });
