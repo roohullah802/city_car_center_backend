@@ -5,6 +5,7 @@ import { Lease } from "../../models/Lease.model";
 import { redisClient } from "../../lib/redis/redis";
 import { Faq } from "../../models/faqs.model";
 import { Policy } from "../../models/policy.model";
+import fs from 'fs'
 
 
 
@@ -83,6 +84,8 @@ export async function carListing(req: Request, res: Response): Promise<void> {
   });
 }
 
+
+
 /**
  * Deletes a lease by its ID, updates the associated car to be available again.
  */
@@ -113,6 +116,8 @@ export async function deleteLease(req: Request, res: Response): Promise<void> {
 
 
 
+
+
 export async function deleteCarListing(
   req: Request,
   res: Response
@@ -130,8 +135,19 @@ export async function deleteCarListing(
       return;
     }
 
+    if (car.images && car.images.length > 0 ) {
+      car.images.forEach((imgPath)=> {
+        fs.unlink(imgPath as any, (err)=>{
+          if (err) console.log('failed to delete images', imgPath, err)
+          else console.log('images deleted', imgPath)  
+        })
+      })
+    }
+
    
     await Car.findByIdAndDelete(carId);
+    await redisClient.del(`AllCars:AllCars`);
+    await redisClient.del(`carDetails:${carId}`);
 
     res
       .status(200)
@@ -141,6 +157,9 @@ export async function deleteCarListing(
     res.status(500).json({ success: false, message: "Server error", error });
   }
 }
+
+
+
 
 /**
  * @desc   Add a single FAQ to the database
@@ -181,6 +200,7 @@ export async function setFAQs(req: Request, res: Response): Promise<void> {
     return;
   }
 }
+
 
 
 

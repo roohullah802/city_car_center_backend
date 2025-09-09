@@ -27,6 +27,7 @@ const corsOptions = {
     "http://localhost:8081", // React Native CLI
     "your-frontend-domain.com", // Production frontend
     "http://82.25.85.117:5000",
+    "http://localhost:5173/",
     "*",
   ],
   credentials: true, // If you're using cookies or auth headers
@@ -50,7 +51,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/api/user/auth", userAuthRouter);
 app.use("/api/user", userRouter);
-app.use("/api/admin", adminRouter);
+app.use("/api/v1/secure/route/admin", adminRouter);
 app.use('/api/payment', paymentRoutes);
 
 

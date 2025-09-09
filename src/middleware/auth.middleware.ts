@@ -31,4 +31,12 @@ function authMiddleware(req: Request, res: Response, next: NextFunction): void {
     }
 }
 
+export function adminMiddleware(req: Request, res: Response, next: NextFunction) {
+  if (req.user?.role !== "admin") {
+    res.status(403).json({ message: "Forbidden: Admins only" });
+    return;
+  }
+  next();
+}
+
 export {authMiddleware}

@@ -5,12 +5,119 @@ import { redisClient } from "../../lib/redis/redis";
 import { signupSchema } from "../../lib/zod/zod.signup";
 import { User } from "../../models/user.model";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import jwt, {JwtPayload} from "jsonwebtoken";
 import { loginSchema } from "../../lib/zod/zod.login";
 import { resetPassSchema } from "../../lib/zod/zod.resetPass";
 import { emailQueue } from "../../lib/mail/emailQueues";
 import path from "path";
 import fs from "fs/promises";
+import axios from "axios";
+import {jwtDecode} from 'jwt-decode'
+
+function signToken(user: any) {
+  return jwt.sign(
+    { userId: user._id, email: user.email, role: user.role },
+    process.env.JWT_SECRET!,
+    { expiresIn: "7d" }
+  );
+}
+
+export async function googleAuth(req: Request, res: Response): Promise<void> {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      res.status(400).json({ success: false, message: "Missing idToken" });
+      return;
+    }
+
+    // verify token with google
+    const googleResp = await axios.get(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`
+    );
+
+    const { sub, email, name, picture } = googleResp.data;
+
+    let user = await User.findOne({ provider: "google", providerId: sub });
+    if (!user) {
+      user = await User.create({
+        provider: "google",
+        providerId: sub,
+        email,
+        name,
+        profilePic: picture,
+      });
+    }
+
+    const token = signToken(user);
+    res.json({ token, user });
+  } catch (err: any) {
+    console.error("Google auth error", err.response?.data || err.message);
+    res.status(401).json({ success: false, message: "Invalid Google token" });
+  }
+}
+
+export async function facebookAuth(req: Request, res: Response): Promise<void> {
+  try {
+    const { accessToken } = req.body;
+    if (!accessToken) {
+      res.status(400).json({ success: false, message: "Missing accessToken" });
+    }
+
+    const fbResp = await axios.get(
+      `https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${accessToken}`
+    );
+
+    const { id, name, email, picture } = fbResp.data;
+
+    let user = await User.findOne({ provider: "facebook", providerId: id });
+    if (!user) {
+      user = await User.create({
+        provider: "facebook",
+        providerId: id,
+        email,
+        name,
+        profilePic: picture?.data?.url,
+      });
+    }
+
+    const token = signToken(user);
+    res.status(400).json({ success: true, token, user });
+  } catch (err: any) {
+    console.error("FB auth error", err.response?.data || err.message);
+    res.status(401).json({ success: false, message: "Invalid Facebook token" });
+  }
+}
+
+export async function appleAuth(req: Request, res: Response): Promise<void> {
+    try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      res.status(400).json({ message: "Missing idToken" });
+      return;
+    } 
+
+    // Apple ID token is a JWT
+    const decoded = jwtDecode(idToken);
+    const { sub, email } = decoded as JwtPayload;
+
+    let user = await User.findOne({ provider: "apple", providerId: sub });
+    if (!user) {
+      user = await User.create({
+        provider: "apple",
+        providerId: sub,
+        email,
+        name: "Apple User",
+        profile: null,
+      });
+    }
+
+    const token = signToken(user);
+    res.json({ token, user });
+  } catch (err:any) {
+    console.error("Apple auth error", err.message);
+    res.status(401).json({ message: "Invalid Apple token" });
+  }
+}
 
 /**
  * @route   POST /api/auth/signup
@@ -19,83 +126,83 @@ import fs from "fs/promises";
  */
 
 export async function userSignup(req: Request, res: Response): Promise<void> {
-  try {
-    const parsed = signupSchema.safeParse(req.body);
+  // try {
+  //   const parsed = signupSchema.safeParse(req.body);
 
-    if (!parsed.success) {
-      res.status(400).json({
-        success: false,
-        message:
-          "Some input fields are missing or incorrect. Please review and try again.",
-        errors: parsed.error.flatten().fieldErrors,
-      });
-      return;
-    }
+  //   if (!parsed.success) {
+  //     res.status(400).json({
+  //       success: false,
+  //       message:
+  //         "Some input fields are missing or incorrect. Please review and try again.",
+  //       errors: parsed.error.flatten().fieldErrors,
+  //     });
+  //     return;
+  //   }
 
-    const { firstName, lastName, email, phoneNo, password } = parsed.data;
+  //   const { firstName, lastName, email, phoneNo, password } = parsed.data;
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      res.status(409).json({
-        success: false,
-        message: "User already exists with this email.",
-      });
-      return;
-    }
+  //   const existingUser = await User.findOne({ email });
+  //   if (existingUser) {
+  //     res.status(409).json({
+  //       success: false,
+  //       message: "User already exists with this email.",
+  //     });
+  //     return;
+  //   }
 
-    const user = await User.create({
-      firstName,
-      lastName,
-      email,
-      phoneNo,
-      password,
-    });
+  //   const user = await User.create({
+  //     firstName,
+  //     lastName,
+  //     email,
+  //     phoneNo,
+  //     password,
+  //   });
 
-    if (!user) {
-      res.status(409).json({
-        success: false,
-        message: "User not created.",
-      });
-      return;
-    }
+  //   if (!user) {
+  //     res.status(409).json({
+  //       success: false,
+  //       message: "User not created.",
+  //     });
+  //     return;
+  //   }
 
-    const code = Math.floor(100000 + Math.random() * 900000);
+  //   const code = Math.floor(100000 + Math.random() * 900000);
 
-    await emailQueue.add(
-      "sendVerificationEmail",
-      {
-        to: email,
-        code,
-      },
-      {
-        attempts: 3,
-        backoff: {
-          type: "exponential",
-          delay: 5000,
-        },
-      }
-    );
+  //   await emailQueue.add(
+  //     "sendVerificationEmail",
+  //     {
+  //       to: email,
+  //       code,
+  //     },
+  //     {
+  //       attempts: 3,
+  //       backoff: {
+  //         type: "exponential",
+  //         delay: 5000,
+  //       },
+  //     }
+  //   );
 
-    await redisClient.setEx(`verifyEmail:code`, 300, JSON.stringify(code));
-    await redisClient.setEx(`user:${email}`, 86400, JSON.stringify(user));
+  //   await redisClient.setEx(`verifyEmail:code`, 300, JSON.stringify(code));
+  //   await redisClient.setEx(`user:${email}`, 86400, JSON.stringify(user));
 
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully.",
-      user: {
-        id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phoneNo: user.phoneNo,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Internal server error. Please try again.",
-    });
-  }
+  //   res.status(201).json({
+  //     success: true,
+  //     message: "User registered successfully.",
+  //     user: {
+  //       id: user._id,
+  //       firstName: user.firstName,
+  //       lastName: user.lastName,
+  //       email: user.email,
+  //       phoneNo: user.phoneNo,
+  //     },
+  //   });
+  // } catch (error) {
+  //   res.status(500).json({
+  //     success: false,
+  //     message: "Internal server error. Please try again.",
+  //   });
+  // }
 }
 
 /**
@@ -148,7 +255,7 @@ export async function userLogin(req: Request, res: Response): Promise<void> {
     }
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET!,
       { expiresIn: "7d" }
     );
@@ -537,13 +644,19 @@ export async function userProfile(req: Request, res: Response): Promise<void> {
       return;
     }
     if (!fullName || !gender || !age) {
-      res.status(400).json({success: false, message:"please provide required fileds"})
+      res
+        .status(400)
+        .json({ success: false, message: "please provide required fileds" });
       return;
     }
 
     let pdf: string = "";
     if (file?.buffer) {
-      const filePath = path.join(__dirname,"../../../../../pdf/uploads",file?.originalname as string);
+      const filePath = path.join(
+        __dirname,
+        "../../../../../pdf/uploads",
+        file?.originalname as string
+      );
       await fs.writeFile(filePath, file?.buffer);
       const BASE_URL = "https://api.citycarcenters.com/pdf/uploads/";
       pdf = `${BASE_URL}${file?.originalname}`;
@@ -612,7 +725,7 @@ export async function resndCode(req: Request, res: Response): Promise<void> {
     );
     await emailQueue.add(
       "resendEmailOtp",
-      { code: newCode, to:email },
+      { code: newCode, to: email },
       {
         attempts: 3,
         backoff: {
@@ -634,6 +747,8 @@ export async function resndCode(req: Request, res: Response): Promise<void> {
     });
   }
 }
+
+
 
 // Controller: Change user password after verifying old one
 export async function changeUserPassword(
@@ -664,36 +779,36 @@ export async function changeUserPassword(
     return;
   }
 
-  try {
-    const user = await User.findById(userId);
-    if (!user || !user.password) {
-      res.status(404).json({ success: false, message: "User not found." });
-      return;
-    }
+  // try {
+  //   const user = await User.findById(userId);
+  //   if (!user || !user.password) {
+  //     res.status(404).json({ success: false, message: "User not found." });
+  //     return;
+  //   }
 
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch) {
-      res.status(400).json({
-        success: false,
-        message: "Old password is incorrect.",
-      });
-      return;
-    }
+  //   const isMatch = await bcrypt.compare(oldPassword, user.password);
+  //   if (!isMatch) {
+  //     res.status(400).json({
+  //       success: false,
+  //       message: "Old password is incorrect.",
+  //     });
+  //     return;
+  //   }
 
-    user.password = newPassword;
-    await user.save();
+  //   user.password = newPassword;
+  //   await user.save();
 
-    // Optional: update Redis cache if you're caching user
-    await redisClient.setEx(`user:${user.email}`, 86400, JSON.stringify(user));
+  //   // Optional: update Redis cache if you're caching user
+  //   await redisClient.setEx(`user:${user.email}`, 86400, JSON.stringify(user));
 
-    res.status(200).json({
-      success: true,
-      message: "Password changed successfully.",
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Internal server error.",
-    });
-  }
+  //   res.status(200).json({
+  //     success: true,
+  //     message: "Password changed successfully.",
+  //   });
+  // } catch (error) {
+  //   res.status(500).json({
+  //     success: false,
+  //     message: "Internal server error.",
+  //   });
+  // }
 }

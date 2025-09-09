@@ -1,40 +1,22 @@
 import mongoose, { Document, Schema } from "mongoose";
-import bcrypt from "bcryptjs";
 
 export interface UserDocument extends Document {
-  firstName: string;
-  lastName: string;
+ name: string;
   email: string;
-  gender: string;
-  age: number;
   drivingLicence: string;
-  phoneNo: string;
-  password: string;
   profile: string;
-  isVerified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  role: string;
+  provider: string;
+  providerId: string;
 }
 
-const userPDFSchema = new mongoose.Schema(
-  {
-    url: { type: String },
-    public_id: { type: String },
-  },
-  { _id: false }
-);
 
 const userSchema = new Schema<UserDocument>(
   {
-    firstName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    lastName: {
-      type: String,
-      trim: true,
-    },
+   name: {
+    type: String,
+    required: true
+   },
     email: {
       type: String,
       required: true,
@@ -42,42 +24,27 @@ const userSchema = new Schema<UserDocument>(
       unique: true,
       lowercase: true,
     },
-    gender: {
-      type: String,
-      enum: ["Male", "Female", "Other"],
-    },
-    age: {
-      type: Number,
-    },
     drivingLicence: {type:String},
-    phoneNo: {
-      type: String,
-      trim: true,
-    },
-    password: {
-      type: String,
-      required: true,
-      minlength: 6,
-    },
     profile:{
       type: String,
     },
-    isVerified: {
-      type: Boolean,
-      default: false,
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user'
     },
+    provider:{
+      type: String,
+      required:true
+    },
+    providerId: {
+      type: String,
+      required: true
+    }
   },
   {
     timestamps: true,
   }
 );
-
-userSchema.pre<UserDocument>("save", async function (next): Promise<void> {
-  if (!this.isModified("password")) return next();
-
-  const hashedPassword = await bcrypt.hash(this.password, 10);
-  this.password = hashedPassword;
-  next();
-});
 
 export const User = mongoose.model<UserDocument>("User", userSchema);
