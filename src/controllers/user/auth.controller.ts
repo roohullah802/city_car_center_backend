@@ -56,37 +56,6 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function facebookAuth(req: Request, res: Response): Promise<void> {
-  try {
-    const { accessToken } = req.body;
-    if (!accessToken) {
-      res.status(400).json({ success: false, message: "Missing accessToken" });
-    }
-
-    const fbResp = await axios.get(
-      `https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${accessToken}`
-    );
-
-    const { id, name, email, picture } = fbResp.data;
-
-    let user = await User.findOne({ provider: "facebook", providerId: id });
-    if (!user) {
-      user = await User.create({
-        provider: "facebook",
-        providerId: id,
-        email,
-        name,
-        profilePic: picture?.data?.url,
-      });
-    }
-
-    const token = signToken(user);
-    res.status(400).json({ success: true, token, user });
-  } catch (err: any) {
-    console.error("FB auth error", err.response?.data || err.message);
-    res.status(401).json({ success: false, message: "Invalid Facebook token" });
-  }
-}
 
 export async function appleAuth(req: Request, res: Response): Promise<void> {
     try {
