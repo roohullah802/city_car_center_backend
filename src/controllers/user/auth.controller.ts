@@ -44,7 +44,7 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
         providerId: sub,
         email,
         name,
-        profilePic: picture,
+        profile: picture,
       });
     }
 
@@ -67,7 +67,7 @@ export async function appleAuth(req: Request, res: Response): Promise<void> {
 
     // Apple ID token is a JWT
     const decoded = jwtDecode(idToken);
-    const { sub, email } = decoded as JwtPayload;
+    const { sub, email, fullName } = decoded as JwtPayload;
 
     let user = await User.findOne({ provider: "apple", providerId: sub });
     if (!user) {
@@ -75,7 +75,7 @@ export async function appleAuth(req: Request, res: Response): Promise<void> {
         provider: "apple",
         providerId: sub,
         email,
-        name: "Apple User",
+        name: fullName?.givenName || 'Apple user',
         profile: null,
       });
     }
