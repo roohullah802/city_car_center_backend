@@ -13,7 +13,6 @@ const adminRouter = express.Router();
 
 adminRouter.route("/car-listing").post(
   authMiddleware,
-  adminMiddleware,
   upload.fields([
     { name: "images", maxCount: 10 },
     { name: "brandImage", maxCount: 1 },
