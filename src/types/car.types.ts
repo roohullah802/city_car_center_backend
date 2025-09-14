@@ -1,10 +1,5 @@
 import mongoose from "mongoose";
 
-export interface ImageObject {
-    url: string;
-    public_id: string;
-  }
-
   
   export interface CarDocument extends mongoose.Document {
     brand: string;
@@ -27,8 +22,8 @@ export interface ImageObject {
     fuelType: string;
     transmission: string;
     description: string;
-    images: ImageObject[]; // ✅ Correct type
-    brandImage: ImageObject;
+    images: string; // ✅ Correct type
+    brandImage: string;
     createdAt: Date;
     updatedAt: Date;
   }

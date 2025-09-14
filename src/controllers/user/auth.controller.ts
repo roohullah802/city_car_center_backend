@@ -37,7 +37,12 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
 
     const { sub, email, name, picture } = googleResp.data;
 
-    let user = await User.findOne({ provider: "google", providerId: sub });
+    const redisUser = await redisClient.get(`user:${email}`);
+    let user;
+    if (redisUser) {
+      user = JSON.parse(redisUser)
+    }else{
+      user = await User.findOne({ provider: "google", providerId: sub });
     if (!user) {
       user = await User.create({
         provider: "google",
@@ -46,6 +51,9 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
         name,
         profile: picture,
       });
+    }
+    await redisClient.setEx(`user:${email}`, 86400, JSON.stringify(user));
+
     }
 
     const token = signToken(user);
