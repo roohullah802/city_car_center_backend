@@ -9,7 +9,7 @@ const userAuthRouter = express.Router()
 
 userAuthRouter.route("/google").post(googleAuth);
 userAuthRouter.route("/apple").post(appleAuth);
-userAuthRouter.route("/validate").get(validateToken);
+userAuthRouter.route("/validate").post(validateToken);
 userAuthRouter.route("/logout").post(authMiddleware, userLogout);
 userAuthRouter.route("/update/profile").post(authMiddleware,uploadPDF.single('file'), userProfile);
 
