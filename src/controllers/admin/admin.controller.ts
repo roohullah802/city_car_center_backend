@@ -118,10 +118,8 @@ export async function deleteLease(req: Request, res: Response): Promise<void> {
 
 
 
-export async function deleteCarListing(
-  req: Request,
-  res: Response
-): Promise<void> {
+
+export async function deleteCarListing(req: Request, res: Response): Promise<void> {
   try {
     const carId = req.params.id;
     if (!carId) {
@@ -135,23 +133,33 @@ export async function deleteCarListing(
       return;
     }
 
-    if (car.images && car.images.length > 0 ) {
-      car.images.forEach((imgPath)=> {
-        fs.unlink(imgPath as any, (err)=>{
-          if (err) console.log('failed to delete images', imgPath, err)
-          else console.log('images deleted', imgPath)  
-        })
-      })
+   
+    if (car.images && car.images.length > 0) {
+      let images: string[] = [];
+
+      if (typeof car.images === "string") {
+      
+        images = JSON.parse(car.images);
+      } else if (Array.isArray(car.images)) {
+        images = car.images;
+      }
+
+      images.forEach((imgPath: string) => {
+        fs.unlink(imgPath, (err) => {
+          if (err) console.log("failed to delete image", imgPath, err);
+          else console.log("image deleted", imgPath);
+        });
+      });
     }
 
-   
+ 
     await Car.findByIdAndDelete(carId);
+
+   
     await redisClient.del(`AllCars:AllCars`);
     await redisClient.del(`carDetails:${carId}`);
 
-    res
-      .status(200)
-      .json({ success: true, message: "Car and images deleted successfully" });
+    res.status(200).json({ success: true, message: "Car and images deleted successfully" });
   } catch (error) {
     console.error("Error deleting car:", error);
     res.status(500).json({ success: false, message: "Server error", error });
