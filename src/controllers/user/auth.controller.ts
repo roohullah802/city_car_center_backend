@@ -109,12 +109,16 @@ export const validateToken = async (req: Request, res: Response): Promise<void> 
 
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-
-    const user = await User.findById(decoded?.userId);
-    if (!user){
+    
+    const redisUser = await redisClient.get(`user:${decoded.email}`);
+    let user;
+    if (redisUser) {
+      user = JSON.parse(redisUser);
+    }else{
       res.status(404).json({ message: "User not found" });
       return;
     }
+
 
     res.status(200).json({success: true,user});
   } catch (err) {
