@@ -91,7 +91,7 @@ async function init() {
 init();
 
 mongoose
-  .connect(process.env.MONGODB_URI! || "mongodb://127.0.0.1:27017/city_car_center", {})
+  .connect(process.env.MONGODB_URI!, {})
   .then(() => {
     connectDB();
     console.log("MongoDB connected");
