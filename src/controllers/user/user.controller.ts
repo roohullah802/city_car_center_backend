@@ -16,14 +16,8 @@ import { emailQueue } from "../../lib/mail/emailQueues";
  * @desc    Get details of a single car, including its reviews
  * @access  Public or Protected (depending on your setup)
  */
-export async function getCarDetails(
-  req: Request,
-  res: Response
-): Promise<void> {
-  type CarId = {
-    id: string;
-  };
-
+export async function getCarDetails(req: Request, res: Response): Promise<void> {
+  type CarId = { id: string };
   const { id } = req.params as CarId;
 
   try {
@@ -41,10 +35,8 @@ export async function getCarDetails(
     if (Object.keys(redisCarDetails).length > 0) {
       cars = redisCarDetails;
     } else {
-      cars = await Car.aggregate([
-        {
-          $match: { _id: new mongoose.Types.ObjectId(id) },
-        },
+      const aggResult = await Car.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(id) } },
         {
           $lookup: {
             from: "reviews",
@@ -60,7 +52,17 @@ export async function getCarDetails(
           },
         },
       ]);
-      cars = cars[0];
+
+      cars = aggResult[0];
+
+     
+      if (!cars) {
+        res.status(404).json({
+          success: false,
+          message: "Car not found with the provided ID.",
+        });
+        return;
+      }
 
       const carData = cars;
       const redisHash: Record<string, string> = {};
@@ -72,14 +74,6 @@ export async function getCarDetails(
 
       await redisClient.hSet(`carDetails:${id}`, redisHash);
       await redisClient.expire(`carDetails:${id}`, 86400);
-
-      if (!cars || cars.length === 0) {
-        res.status(404).json({
-          success: false,
-          message: "Car not found with the provided ID.",
-        });
-        return;
-      }
     }
 
     res.status(200).json({
@@ -95,6 +89,7 @@ export async function getCarDetails(
     });
   }
 }
+
 
 /**
  * @route   GET /api/cars
