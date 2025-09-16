@@ -29,12 +29,23 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
       return;
     }
 
+    // Try from Redis first
     const redisCarDetails = await redisClient.hGetAll(`carDetails:${id}`);
 
     let cars;
-    if (Object.keys(redisCarDetails).length > 0) {
-      cars = redisCarDetails;
+    if (redisCarDetails && Object.keys(redisCarDetails).length > 0) {
+      // Redis returns strings, so parse them if needed
+      cars = Object.fromEntries(
+        Object.entries(redisCarDetails).map(([key, val]) => {
+          try {
+            return [key, JSON.parse(val)];
+          } catch {
+            return [key, val];
+          }
+        })
+      );
     } else {
+      // Fetch from DB
       const aggResult = await Car.aggregate([
         { $match: { _id: new mongoose.Types.ObjectId(id) } },
         {
@@ -53,10 +64,7 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
         },
       ]);
 
-      cars = aggResult[0];
-
-     
-      if (!cars) {
+      if (!aggResult || aggResult.length === 0) {
         res.status(404).json({
           success: false,
           message: "Car not found with the provided ID.",
@@ -64,16 +72,19 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
         return;
       }
 
-      const carData = cars;
-      const redisHash: Record<string, string> = {};
+      cars = aggResult[0];
 
-      for (let [field, value] of Object.entries(carData)) {
-        redisHash[field] =
-          typeof value === "object" ? JSON.stringify(value) : String(value);
+      // Only cache if valid data exists
+      if (cars) {
+        const redisHash: Record<string, string> = {};
+        for (const [field, value] of Object.entries(cars)) {
+          redisHash[field] =
+            typeof value === "object" ? JSON.stringify(value) : String(value);
+        }
+
+        await redisClient.hSet(`carDetails:${id}`, redisHash);
+        await redisClient.expire(`carDetails:${id}`, 86400);
       }
-
-      await redisClient.hSet(`carDetails:${id}`, redisHash);
-      await redisClient.expire(`carDetails:${id}`, 86400);
     }
 
     res.status(200).json({
@@ -89,6 +100,7 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
     });
   }
 }
+
 
 
 /**
