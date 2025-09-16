@@ -16,12 +16,14 @@ import { emailQueue } from "../../lib/mail/emailQueues";
  * @desc    Get details of a single car, including its reviews
  * @access  Public or Protected (depending on your setup)
  */
+
+
 export async function getCarDetails(req: Request, res: Response): Promise<void> {
   type CarId = { id: string };
   const { id } = req.params as CarId;
 
   try {
-    if (!id) {
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       res.status(400).json({
         success: false,
         message: "Please provide a valid carId to fetch car details.",
@@ -29,12 +31,12 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Try from Redis first
-    const redisCarDetails = await redisClient.hGetAll(`carDetails:${id}`);
+    let cars: any;
 
-    let cars;
+    // 🔹 Try Redis cache first
+    const redisCarDetails = await redisClient.hGetAll(`carDetails:${id}`);
     if (redisCarDetails && Object.keys(redisCarDetails).length > 0) {
-      // Redis returns strings, so parse them if needed
+      console.log(`Cache hit for car ${id}`);
       cars = Object.fromEntries(
         Object.entries(redisCarDetails).map(([key, val]) => {
           try {
@@ -45,7 +47,9 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
         })
       );
     } else {
-      // Fetch from DB
+      console.log(`Cache miss for car ${id}, fetching from DB...`);
+
+      // 🔹 Fetch from MongoDB
       const aggResult = await Car.aggregate([
         { $match: { _id: new mongoose.Types.ObjectId(id) } },
         {
@@ -74,19 +78,22 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
 
       cars = aggResult[0];
 
-      // Only cache if valid data exists
-      if (cars) {
+      // 🔹 Save to Redis (only if cars is valid)
+      if (cars && typeof cars === "object") {
         const redisHash: Record<string, string> = {};
         for (const [field, value] of Object.entries(cars)) {
           redisHash[field] =
-            typeof value === "object" ? JSON.stringify(value) : String(value);
+            value && typeof value === "object"
+              ? JSON.stringify(value)
+              : String(value ?? "");
         }
 
         await redisClient.hSet(`carDetails:${id}`, redisHash);
-        await redisClient.expire(`carDetails:${id}`, 86400);
+        await redisClient.expire(`carDetails:${id}`, 86400); // cache for 1 day
       }
     }
 
+    // ✅ Respond
     res.status(200).json({
       success: true,
       message: "Car details fetched successfully.",
@@ -100,6 +107,7 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
     });
   }
 }
+
 
 
 
