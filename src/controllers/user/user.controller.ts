@@ -183,9 +183,10 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
 export async function createLease(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
   const email = req.user?.email;
-  const { startDate, endDate } = req.body as {
+  const { startDate, endDate, paymentId } = req.body as {
     startDate: string;
     endDate: string;
+    paymentId: string;
   };
   const carId = req.params?.id as string;
 
@@ -242,6 +243,7 @@ export async function createLease(req: Request, res: Response): Promise<void> {
       startDate: startDate,
       totalAmount: car.pricePerDay * 7,
       endDate: endDate,
+      paymentId: paymentId
     });
 
     // Update car availability

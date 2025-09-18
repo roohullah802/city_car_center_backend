@@ -123,6 +123,7 @@ router.post(
         .json({
           success: true,
           message: "payment intend created",
+          paymentId: paymentIntent?.id,
           clientSecret: paymentIntent.client_secret,
         });
     } catch (error: any) {
