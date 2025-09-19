@@ -102,7 +102,7 @@ app.post("/webhook",express.raw({ type: "application/json" }),async (req: Reques
             }
         }
         await redisClient.hSet(`carDetails:${carId}`, 'available', 'false');
-        await redisClient.del(`leases:${lease._id}`);
+        await redisClient.del(`leases:${userId}`);
         await redisClient.del(`leasePaymentHistory:${userId}`);
 
         await emailQueue.add(
