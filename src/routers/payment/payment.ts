@@ -186,6 +186,8 @@ router.post(
         }
         await redisClient.hSet(`carDetails:${carId}`, 'available', 'false');
         await redisClient.del(`leasePaymentHistory:${userId}`);
+        console.log('lease created success!!');
+        
 
         await emailQueue.add(
               "leaseConfirmationEmail",
