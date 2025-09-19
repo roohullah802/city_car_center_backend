@@ -80,7 +80,7 @@ app.post("/webhook",express.raw({ type: "application/json" }),async (req: Reques
        lease =  await Lease.create({
           user: userId,
           car: carId,
-          amount: paymentIntent.amount / 100,
+          totalAmount: paymentIntent.amount / 100,
           paymentIntentId: paymentIntent.id,
           status: "completed",
           startDate: new Date(startDate),
