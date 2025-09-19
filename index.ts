@@ -24,9 +24,17 @@ dotenv.config();
 connectRedis();
 
 const app = express();
-const server = http.createServer(app);
+const serverr = http.createServer(app);
 
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(serverr, { cors: { origin: "*" } });
+
+io.on("connection", (socket) => {
+  console.log("🔌 Client connected:", socket.id);
+
+  socket.on("disconnect", () => {
+    console.log("❌ Client disconnected:", socket.id);
+  });
+});
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   req.io = io;
@@ -133,14 +141,7 @@ app.post(
         );
 
         // socket io 
-        req.io.emit("leaseCreated", {
-          leaseId: lease._id,
-          userId,
-          carId,
-          startDate,
-          endDate,
-          totalAmount: lease.totalAmount,
-        });
+        req.io.emit("leaseCreated", lease);
       }
     }
     if (event.type === "payment_intent.payment_failed") {
@@ -205,7 +206,7 @@ mongoose
   .then(() => {
     connectDB();
     console.log("MongoDB connected");
-    app.listen(5000, "0.0.0.0", () =>
+    serverr.listen(5000, "0.0.0.0", () =>
       console.log(`Server running on port ${PORT}`)
     );
   })
