@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { connectDB } from "./src/db/mongodb";
@@ -12,17 +12,26 @@ import { connectRedis, redisClient } from "./src/lib/redis/redis";
 import "./src/lib/mail/reminder/leaseReminderWorker";
 import { leaseReminderQueue } from "./src/lib/mail/reminder/leaseReminderQueue";
 import "./src/lib/mail/email.Processor";
-import paymentRoutes from './src/routers/payment/payment'
+import paymentRoutes from "./src/routers/payment/payment";
 import Stripe from "stripe";
 import { Lease } from "./src/models/Lease.model";
 import { emailQueue } from "./src/lib/mail/emailQueues";
 import { Car } from "./src/models/car.model";
-
+import { Server } from "socket.io";
+import http from "http";
 
 dotenv.config();
 connectRedis();
 
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, { cors: { origin: "*" } });
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  req.io = io;
+  next();
+});
 
 const corsOptions = {
   origin: [
@@ -52,7 +61,10 @@ const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
   apiVersion: "2025-05-28.basil",
 });
 
-app.post("/webhook",express.raw({ type: "application/json" }),async (req: Request, res: Response): Promise<void> => {
+app.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  async (req: Request, res: Response): Promise<void> => {
     const sig = req.headers["stripe-signature"] as string;
 
     let event: Stripe.Event;
@@ -69,15 +81,15 @@ app.post("/webhook",express.raw({ type: "application/json" }),async (req: Reques
 
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      console.log('payment is created sucessfully');
-      
+      console.log("payment is created sucessfully");
 
       // // ✅ Read metadata values
-      const { userId, carId, startDate, endDate, email } = paymentIntent.metadata; 
+      const { userId, carId, startDate, endDate, email } =
+        paymentIntent.metadata;
 
       let lease;
       if (userId && carId) {
-       lease =  await Lease.create({
+        lease = await Lease.create({
           user: userId,
           car: carId,
           totalAmount: paymentIntent.amount / 100,
@@ -85,47 +97,64 @@ app.post("/webhook",express.raw({ type: "application/json" }),async (req: Reques
           status: "completed",
           startDate: new Date(startDate),
           endDate: new Date(endDate),
-          paymentId: paymentIntent.id
+          paymentId: paymentIntent.id,
         });
 
-        await Car.findByIdAndUpdate(carId, {
-            available: false
-        }, {new: true});
+        await Car.findByIdAndUpdate(
+          carId,
+          {
+            available: false,
+          },
+          { new: true }
+        );
 
-        const redisCars = await redisClient.get('AllCars:AllCars');
+        const redisCars = await redisClient.get("AllCars:AllCars");
         if (redisCars) {
-            const allCars = JSON.parse(redisCars);
-            const cars = allCars.find((c:any)=> c._id === carId);
-            if (cars) {
-                cars.available = false
-            }
+          const allCars = JSON.parse(redisCars);
+          const cars = allCars.find((c: any) => c._id === carId);
+          if (cars) {
+            cars.available = false;
+          }
         }
-        await redisClient.hSet(`carDetails:${carId}`, 'available', 'false');
+        await redisClient.hSet(`carDetails:${carId}`, "available", "false");
         await redisClient.del(`leases:${userId}`);
         await redisClient.del(`leasePaymentHistory:${userId}`);
 
         await emailQueue.add(
-              "leaseConfirmationEmail",
-              { leaseId: lease._id, startDate, endDate, to: email },
-              {
-                attempts: 3,
-                backoff: {
-                  type: "exponential",
-                  delay: 5000,
-                },
-              }
-            );
+          "leaseConfirmationEmail",
+          { leaseId: lease._id, startDate, endDate, to: email },
+          {
+            attempts: 3,
+            backoff: {
+              type: "exponential",
+              delay: 5000,
+            },
+          }
+        );
 
+        // socket io 
+        req.io.emit("leaseCreated", {
+          leaseId: lease._id,
+          userId,
+          carId,
+          startDate,
+          endDate,
+          totalAmount: lease.totalAmount,
+        });
       }
     }
     if (event.type === "payment_intent.payment_failed") {
-      res.status(400).json({success: false, message:"payment has failed! please try again"})
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: "payment has failed! please try again",
+        });
       return;
     }
     res.json({ received: true });
   }
 );
-
 
 app.use(cors(corsOptions));
 app.use(cookieParser());
@@ -135,11 +164,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/api/user/auth", userAuthRouter);
 app.use("/api/user", userRouter);
 app.use("/api/v1/secure/route/admin", adminRouter);
-app.use('/api/payment', paymentRoutes);
-
-
-
-
+app.use("/api/payment", paymentRoutes);
 
 const PORT = process.env.PORT || 5000;
 
@@ -173,7 +198,10 @@ async function init() {
 init();
 
 mongoose
-  .connect(process.env.MONGODB_URI! || 'mongodb://127.0.0.1:27017/city_car_center', {})
+  .connect(
+    process.env.MONGODB_URI! || "mongodb://127.0.0.1:27017/city_car_center",
+    {}
+  )
   .then(() => {
     connectDB();
     console.log("MongoDB connected");
