@@ -74,6 +74,8 @@ app.post("/webhook",express.raw({ type: "application/json" }),async (req: Reques
 
       // // ✅ Read metadata values
       const { userId, carId, startDate, endDate, email } = paymentIntent.metadata;
+      console.log(userId, carId, startDate, endDate, email);
+      
 
       let lease;
       if (userId && carId) {
