@@ -201,12 +201,15 @@ router.post(
               }
             );
 
+            
+
+
       }
     }
     if (event.type === "payment_intent.payment_failed") {
       console.log('payment is failed!!');
-      
     }
+    res.json({ received: true });
   }
 );
 
