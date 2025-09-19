@@ -1,6 +1,6 @@
 import express from 'express'
 import { authMiddleware } from '../../middleware/auth.middleware'
-import { getCarDetails, getAllCars,  extendLease, getPaymentDetails, returnCar, getAllBrands, getAllFAQs, reportIssue, getAllPolicy, getAllLeases, leaseDetails, createLease } from '../../controllers/user/user.controller'
+import { getCarDetails, getAllCars,  extendLease, getPaymentDetails, returnCar, getAllBrands, getAllFAQs, reportIssue, getAllPolicy, getAllLeases, leaseDetails } from '../../controllers/user/user.controller'
 import uploadPDF from '../../lib/multer/pdf.multer'
 const userRouter = express.Router()
 
@@ -8,7 +8,6 @@ userRouter.route("/car/details/:id").get(getCarDetails)
 userRouter.route("/all/cars").get(getAllCars)
 userRouter.route("/all/brands").get(getAllBrands)
 userRouter.route("/car/extend-lease/:id").post(authMiddleware, extendLease)
-userRouter.route("/create-lease/:id").post(authMiddleware, createLease)
 userRouter.route("/car/payment/history").get(authMiddleware, getPaymentDetails)
 userRouter.route("/car/return/:id").post(authMiddleware, uploadPDF.single("pdf") , returnCar)
 userRouter.route("/all/faqs").get(getAllFAQs)
