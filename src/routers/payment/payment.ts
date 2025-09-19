@@ -157,49 +157,49 @@ router.post(
       
 
       // // ✅ Read metadata values
-      // const { userId, carId, startDate, endDate, email } = paymentIntent.metadata;
+      const { userId, carId, startDate, endDate, email } = paymentIntent.metadata;
 
-      // let lease;
-      // if (userId && carId) {
-      //  lease =  await Lease.create({
-      //     user: userId,
-      //     car: carId,
-      //     amount: paymentIntent.amount / 100,
-      //     paymentIntentId: paymentIntent.id,
-      //     status: "completed",
-      //     startDate: new Date(startDate),
-      //     endDate: new Date(endDate),
-      //   });
+      let lease;
+      if (userId && carId) {
+       lease =  await Lease.create({
+          user: userId,
+          car: carId,
+          amount: paymentIntent.amount / 100,
+          paymentIntentId: paymentIntent.id,
+          status: "completed",
+          startDate: new Date(startDate),
+          endDate: new Date(endDate),
+        });
 
-        // await Car.findByIdAndUpdate(carId, {
-        //     available: false
-        // }, {new: true});
+        await Car.findByIdAndUpdate(carId, {
+            available: false
+        }, {new: true});
 
-        // const redisCars = await redisClient.get('AllCars:AllCars');
-        // if (redisCars) {
-        //     const allCars = JSON.parse(redisCars);
-        //     const cars = allCars.find((c:any)=> c._id === carId);
-        //     if (cars) {
-        //         cars.available = false
-        //         return cars
-        //     }
-        // }
-        // await redisClient.hSet(`carDetails:${carId}`, 'available', 'false');
-        // await redisClient.del(`leasePaymentHistory:${userId}`);
+        const redisCars = await redisClient.get('AllCars:AllCars');
+        if (redisCars) {
+            const allCars = JSON.parse(redisCars);
+            const cars = allCars.find((c:any)=> c._id === carId);
+            if (cars) {
+                cars.available = false
+                return cars
+            }
+        }
+        await redisClient.hSet(`carDetails:${carId}`, 'available', 'false');
+        await redisClient.del(`leasePaymentHistory:${userId}`);
 
-        // await emailQueue.add(
-        //       "leaseConfirmationEmail",
-        //       { leaseId: lease._id, startDate, endDate, to: email },
-        //       {
-        //         attempts: 3,
-        //         backoff: {
-        //           type: "exponential",
-        //           delay: 5000,
-        //         },
-        //       }
-        //     );
+        await emailQueue.add(
+              "leaseConfirmationEmail",
+              { leaseId: lease._id, startDate, endDate, to: email },
+              {
+                attempts: 3,
+                backoff: {
+                  type: "exponential",
+                  delay: 5000,
+                },
+              }
+            );
 
-      // }
+      }
     }
     if (event.type === "payment_intent.payment_failed") {
       console.log('payment is failed!!');
