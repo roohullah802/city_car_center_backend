@@ -73,9 +73,7 @@ app.post("/webhook",express.raw({ type: "application/json" }),async (req: Reques
       
 
       // // ✅ Read metadata values
-      const { userId, carId, startDate, endDate, email } = paymentIntent.metadata;
-      console.log(userId, carId, startDate, endDate, email);
-      
+      const { userId, carId, startDate, endDate, email } = paymentIntent.metadata; 
 
       let lease;
       if (userId && carId) {
@@ -87,6 +85,7 @@ app.post("/webhook",express.raw({ type: "application/json" }),async (req: Reques
           status: "completed",
           startDate: new Date(startDate),
           endDate: new Date(endDate),
+          paymentId: paymentIntent.id
         });
 
         await Car.findByIdAndUpdate(carId, {
@@ -104,8 +103,6 @@ app.post("/webhook",express.raw({ type: "application/json" }),async (req: Reques
         }
         await redisClient.hSet(`carDetails:${carId}`, 'available', 'false');
         await redisClient.del(`leasePaymentHistory:${userId}`);
-        console.log('lease created success!!');
-        
 
         await emailQueue.add(
               "leaseConfirmationEmail",
@@ -119,13 +116,11 @@ app.post("/webhook",express.raw({ type: "application/json" }),async (req: Reques
               }
             );
 
-            
-
-
       }
     }
     if (event.type === "payment_intent.payment_failed") {
-      console.log('payment is failed!!');
+      res.status(400).json({success: false, message:"payment has failed! please try again"})
+      return;
     }
     res.json({ received: true });
   }
