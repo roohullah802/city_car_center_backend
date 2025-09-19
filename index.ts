@@ -98,7 +98,6 @@ app.post("/webhook",express.raw({ type: "application/json" }),async (req: Reques
             const cars = allCars.find((c:any)=> c._id === carId);
             if (cars) {
                 cars.available = false
-                return cars
             }
         }
         await redisClient.hSet(`carDetails:${carId}`, 'available', 'false');
