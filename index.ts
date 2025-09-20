@@ -153,7 +153,7 @@ app.post(
             // Send confirmation email
             await emailQueue.add(
               "leaseExtendedEmail",
-              { leaseId: lease._id, endDate },
+              { leaseId: lease._id, endDate,to: email },
               { attempts: 3, backoff: { type: "exponential", delay: 5000 } }
             );
 
