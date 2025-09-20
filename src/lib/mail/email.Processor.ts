@@ -43,7 +43,7 @@ const worker = new Worker(
     }
 
     if (job.name === 'leaseExtendedEmail') {
-       const { leaseId, startDate, endDate } = job.data;
+       const { leaseId, endDate } = job.data;
 
       await transporter.sendMail({
         from: process.env.SMTP_USER || 'jaanroohullah83@gmail.com',
@@ -52,7 +52,6 @@ const worker = new Worker(
         html: `
           <p>Hi,</p>
           <p>Your lease has been extended.</p>
-          <p><strong>Start:</strong> ${startDate}<br/>
              <strong>End:</strong> ${endDate}</p>
           <p>Lease ID: ${leaseId}</p>
           <p>Thank you for using City Car Center!</p>
