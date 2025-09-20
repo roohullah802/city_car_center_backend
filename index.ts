@@ -95,8 +95,6 @@ app.post(
 
       const { action, userId, leaseId, carId, startDate, endDate, email } =
         paymentIntent.metadata;
-
-        console.log(action);
         
 
       try {
@@ -139,7 +137,6 @@ app.post(
             { endDate: new Date(endDate) },
             { new: true }
           );
-          console.log('hhhhh');
           
 
           if (!lease) {
