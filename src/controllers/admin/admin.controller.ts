@@ -82,6 +82,7 @@ export async function carListing(req: Request, res: Response): Promise<void> {
     message: "Car registered successfully",
     car: JSON.parse(JSON.stringify(car)),
   });
+  req.io.emit('carAdded', car);
 }
 
 
