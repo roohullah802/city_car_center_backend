@@ -134,4 +134,123 @@ router.post(
 );
 
 
+
+
+router.post(
+  "/create-payment-intent-for-extend-lease/:id",
+  authMiddleware,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      const carId = req?.params.id;
+      const { startDate, endDate } = req.body;
+
+      if (!userId || !carId) {
+        res
+          .status(400)
+          .json({ success: false, message: "Missing required fields" });
+        return;
+      }
+      if (!startDate || !endDate) {
+        res
+          .status(400)
+          .json({
+            success: false,
+            message: "Please provide the required fileds.",
+          });
+        return;
+      }
+
+      const redisCars = await redisClient.get(`AllCars:AllCars`);
+      let car;
+      if (redisCars) {
+        const allCars = JSON.parse(redisCars);
+        car = allCars.find((c: any) => c._id === carId);
+      } else {
+        car = await Car.findById(carId);
+        if (!car) {
+          res.status(404).json({
+            success: false,
+            message: "Car not found.",
+          });
+          return;
+        }
+      }
+
+      if (!car.available) {
+        res.status(400).json({
+          success: false,
+          message: "We're sorry, but this car is currently unavailable for lease.",
+        });
+        return;
+      }
+
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+      const dayDifference = Math.ceil(
+        (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (dayDifference !== 7) {
+        res.status(400).json({
+          success: false,
+          message: "The first lease must be exactly 7 days long.",
+        });
+        return;
+      }
+
+      const totalAmount = (car.pricePerDay as number) * 7;
+
+      const existingLease = await Lease.findOne({
+        car: new mongoose.Types.ObjectId(carId),
+        status: "completed",
+        $or: [
+          {
+            startDate: { $lte: new Date(endDate) },
+            endDate: { $gte: new Date(startDate) },
+          },
+        ],
+      });
+
+      if (existingLease) {
+        res.status(409).json({
+          success: false,
+          message: "Car not available for these dates",
+        });
+
+        return;
+      }
+
+      const existCar = await Car.findById(carId);
+      if (!existCar) {
+        res.status(400).json({ success: false, message: "Car not fount." });
+        return;
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: totalAmount * 100, // cents
+        currency: "usd",
+        metadata: {
+          email: req.user?.email!,
+          userId, // 👈 store userId
+          carId, // 👈 store carId
+          startDate,
+          endDate,
+        },
+      });
+
+      res
+        .status(200)
+        .json({
+          success: true,
+          message: "payment intend created",
+          paymentId: paymentIntent?.id,
+          clientSecret: paymentIntent.client_secret,
+        });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+);
+
 export default router;

@@ -221,17 +221,17 @@ export async function extendLease(req: Request, res: Response): Promise<void> {
     newEndDate.setDate(newEndDate.getDate() + additionalDays);
 
     // Check if lease has exactly 1 day left
-    const now = new Date();
-    const oneDayInMs = 24 * 60 * 60 * 1000;
-    const timeLeft = new Date(lease.endDate).getTime() - now.getTime();
+    // const now = new Date();
+    // const oneDayInMs = 24 * 60 * 60 * 1000;
+    // const timeLeft = new Date(lease.endDate).getTime() - now.getTime();
 
-    if (timeLeft > oneDayInMs || timeLeft < 0) {
-      res.status(400).json({
-        success: false,
-        message: "Lease can only be extended when 1 day is remaining.",
-      });
-      return;
-    }
+    // if (timeLeft > oneDayInMs || timeLeft < 0) {
+    //   res.status(400).json({
+    //     success: false,
+    //     message: "Lease can only be extended when 1 day is remaining.",
+    //   });
+    //   return;
+    // }
 
     const dailyRate = car?.pricePerDay;
     const totalAmount = dailyRate * additionalDays * 100; // Stripe expects cents
