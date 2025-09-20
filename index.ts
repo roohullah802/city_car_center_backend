@@ -96,6 +96,9 @@ app.post(
       const { action, userId, leaseId, carId, startDate, endDate, email } =
         paymentIntent.metadata;
 
+        console.log(action);
+        
+
       try {
         if (action === "createLease" && userId && carId) {
           // Create new lease
@@ -136,6 +139,8 @@ app.post(
             { endDate: new Date(endDate) },
             { new: true }
           );
+          console.log('hhhhh');
+          
 
           if (!lease) {
             console.error("Lease not found for extension:", leaseId);
