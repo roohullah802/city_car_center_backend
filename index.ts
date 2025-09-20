@@ -69,6 +69,7 @@ const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
   apiVersion: "2025-05-28.basil",
 });
 
+// Webhook route
 app.post(
   "/webhook",
   express.raw({ type: "application/json" }),
@@ -83,76 +84,96 @@ app.post(
         process.env.STRIPE_WEBHOOK_SECRET as string
       );
     } catch (err: any) {
-      res.status(400).send(`Webhook Error: ${err.message}`);
+      console.error("⚠️ Webhook signature verification failed:", err.message);
+      res.status(400).json({success: false, message:"webhook failed"});
       return;
     }
 
+    // Handle successful payment
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      console.log("payment is created sucessfully");
 
-      // // ✅ Read metadata values
-      const { userId, carId, startDate, endDate, email } =
+      const { action, userId, leaseId, carId, startDate, endDate, email } =
         paymentIntent.metadata;
 
-      let lease;
-      if (userId && carId) {
-        lease = await Lease.create({
-          user: userId,
-          car: carId,
-          totalAmount: paymentIntent.amount / 100,
-          paymentIntentId: paymentIntent.id,
-          status: "completed",
-          startDate: new Date(startDate),
-          endDate: new Date(endDate),
-          paymentId: paymentIntent.id,
-        });
+      try {
+        if (action === "createLease" && userId && carId) {
+          // Create new lease
+          const lease = await Lease.create({
+            user: userId,
+            car: carId,
+            totalAmount: paymentIntent.amount / 100,
+            paymentIntentId: paymentIntent.id,
+            status: "completed",
+            startDate: new Date(startDate),
+            endDate: new Date(endDate),
+            paymentId: paymentIntent.id,
+          });
 
-        await Car.findByIdAndUpdate(
-          carId,
-          {
-            available: false,
-          },
-          { new: true }
-        );
+          // Update car availability
+          await Car.findByIdAndUpdate(carId, { available: false });
 
-        const redisCars = await redisClient.get("AllCars:AllCars");
-        if (redisCars) {
-          const allCars = JSON.parse(redisCars);
-          const cars = allCars.find((c: any) => c._id === carId);
-          if (cars) {
-            cars.available = false;
+          // Update Redis cache
+          await redisClient.hSet(`carDetails:${carId}`, "available", "false");
+          await redisClient.del(`leases:${userId}`);
+          await redisClient.del(`leasePaymentHistory:${userId}`);
+
+          // Send confirmation email via queue
+          await emailQueue.add(
+            "leaseConfirmationEmail",
+            { leaseId: lease._id, startDate, endDate, to: email },
+            { attempts: 3, backoff: { type: "exponential", delay: 5000 } }
+          );
+
+          // Notify clients via socket.io
+          req.io.emit("leaseCreated", lease);
+        }
+
+        if (action === "extendLease" && userId && leaseId) {
+          // Extend lease
+          const lease = await Lease.findByIdAndUpdate(
+            leaseId,
+            { endDate: new Date(endDate) },
+            { new: true }
+          );
+
+          if (!lease) {
+            console.error("Lease not found for extension:", leaseId);
+          } else {
+            // Clear Redis caches
+            await redisClient.del(`leases:${userId}`);
+            await redisClient.del(`leasePaymentHistory:${userId}`);
+
+            // Send confirmation email
+            await emailQueue.add(
+              "leaseConfirmationEmail",
+              { leaseId: lease._id, startDate, endDate, to: email },
+              { attempts: 3, backoff: { type: "exponential", delay: 5000 } }
+            );
+
+            // Notify clients
+            req.io.emit("leaseExtended", lease);
+
+            console.log("✅ Lease extended successfully:", lease._id);
           }
         }
-        await redisClient.hSet(`carDetails:${carId}`, "available", "false");
-        await redisClient.del(`leases:${userId}`);
-        await redisClient.del(`leasePaymentHistory:${userId}`);
-
-        await emailQueue.add(
-          "leaseConfirmationEmail",
-          { leaseId: lease._id, startDate, endDate, to: email },
-          {
-            attempts: 3,
-            backoff: {
-              type: "exponential",
-              delay: 5000,
-            },
-          }
-        );
-
-        // socket io 
-        req.io.emit("leaseCreated", lease);
+      } catch (err) {
+        console.error("❌ Error handling webhook:", err);
       }
     }
+
+    // Handle failed payment
     if (event.type === "payment_intent.payment_failed") {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "payment has failed! please try again",
-        });
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      console.warn("❌ Payment failed for intent:", paymentIntent.id);
+
+      res.status(400).json({
+        success: false,
+        message: "Payment has failed! Please try again.",
+      });
       return;
     }
+
     res.json({ received: true });
   }
 );
