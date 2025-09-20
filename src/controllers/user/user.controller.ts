@@ -506,32 +506,7 @@ export async function getAllBrands(req: Request, res: Response): Promise<void> {
   }
 }
 
-// export async function searchBrandQuery(req: Request, res: Response): Promise<void> {
-//   const query = req.query?.q as string;
 
-//   const brands = await Car.aggregate([
-//     {
-//       $match: {
-//         brand: {$regex: query, $options: "i"}
-//       }
-//     },
-//     {
-//       $group: {
-//         _id: "$brand",
-//         brandImage: {
-//           $first: "$brandImage"
-//         }
-//       }
-//     },
-//     {
-//       $project: {
-//         _id: 0,
-//         brand: "$_id",
-//         brandImage: 1
-//       }
-//     }
-//   ])
-// }
 
 //  Get lease details by ID, with Redis caching
 export async function leaseDetails(req: Request, res: Response): Promise<void> {

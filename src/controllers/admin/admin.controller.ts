@@ -94,8 +94,9 @@ export async function carListing(req: Request, res: Response): Promise<void> {
       },
     },
   ]);
-  req.io.emit('brandAdded', brands);
+  req.io.emit("brandAdded", brands);
   req.io.emit("carAdded", car);
+  await redisClient.setEx("AllBrands:AllBrands", 86400, JSON.stringify(brands));
 }
 
 /**
