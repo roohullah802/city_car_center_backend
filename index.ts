@@ -146,6 +146,7 @@ app.post(
             console.error("Lease not found for extension:", leaseId);
           } else {
             // Clear Redis caches
+            await redisClient.del(`leaseDetails:${leaseId}`);
             await redisClient.del(`leases:${userId}`);
             await redisClient.del(`leasePaymentHistory:${userId}`);
 
