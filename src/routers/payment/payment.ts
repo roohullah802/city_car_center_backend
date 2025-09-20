@@ -197,7 +197,7 @@ router.post(
           leaseId,
           carId: car._id.toString(),
           additionalDays: additionalDays.toString(),
-          newEndDate: newEndDate.toISOString(),
+          endDate: newEndDate.toISOString(),
         },
       });
 
