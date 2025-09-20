@@ -492,8 +492,6 @@ export async function getAllBrands(req: Request, res: Response): Promise<void> {
       );
     }
 
-    req.io.emit('brandAdded', brands)
-
     res.status(200).json({
       success: true,
       message: "Car brands fetched successfully.",
