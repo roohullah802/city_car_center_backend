@@ -5,10 +5,7 @@ import { Lease } from "../../models/Lease.model";
 import { redisClient } from "../../lib/redis/redis";
 import { Faq } from "../../models/faqs.model";
 import { Policy } from "../../models/policy.model";
-import fs from 'fs'
-
-
-
+import fs from "fs";
 
 export async function carListing(req: Request, res: Response): Promise<void> {
   const parsed = createCarSchema.safeParse(req.body);
@@ -82,10 +79,24 @@ export async function carListing(req: Request, res: Response): Promise<void> {
     message: "Car registered successfully",
     car: JSON.parse(JSON.stringify(car)),
   });
-  req.io.emit('carAdded', car);
+  const brands = await Car.aggregate([
+    {
+      $group: {
+        _id: "$brand",
+        brandImage: { $first: "$brandImage" },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        brand: "$_id",
+        brandImage: 1,
+      },
+    },
+  ]);
+  req.io.emit('brandAdded', brands);
+  req.io.emit("carAdded", car);
 }
-
-
 
 /**
  * Deletes a lease by its ID, updates the associated car to be available again.
@@ -115,12 +126,10 @@ export async function deleteLease(req: Request, res: Response): Promise<void> {
   });
 }
 
-
-
-
-
-
-export async function deleteCarListing(req: Request, res: Response): Promise<void> {
+export async function deleteCarListing(
+  req: Request,
+  res: Response
+): Promise<void> {
   try {
     const carId = req.params.id;
     if (!carId) {
@@ -134,12 +143,10 @@ export async function deleteCarListing(req: Request, res: Response): Promise<voi
       return;
     }
 
-   
     if (car.images && car.images.length > 0) {
       let images: string[] = [];
 
       if (typeof car.images === "string") {
-      
         images = JSON.parse(car.images);
       } else if (Array.isArray(car.images)) {
         images = car.images;
@@ -153,22 +160,19 @@ export async function deleteCarListing(req: Request, res: Response): Promise<voi
       });
     }
 
- 
     await Car.findByIdAndDelete(carId);
 
-   
     await redisClient.del(`AllCars:AllCars`);
     await redisClient.del(`carDetails:${carId}`);
 
-    res.status(200).json({ success: true, message: "Car and images deleted successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "Car and images deleted successfully" });
   } catch (error) {
     console.error("Error deleting car:", error);
     res.status(500).json({ success: false, message: "Server error", error });
   }
 }
-
-
-
 
 /**
  * @desc   Add a single FAQ to the database
@@ -209,9 +213,6 @@ export async function setFAQs(req: Request, res: Response): Promise<void> {
     return;
   }
 }
-
-
-
 
 // Controller to set or create a Privacy Policy document
 export async function setPrivacypolicy(
