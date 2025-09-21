@@ -137,7 +137,6 @@ app.post(
             { endDate: new Date(endDate) },
             { new: true }
           );
-          
 
           if (!lease) {
             console.error("Lease not found for extension:", leaseId);

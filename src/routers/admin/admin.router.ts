@@ -12,7 +12,7 @@ import { compressAndResize, upload } from "../../lib/multer/multer";
 const adminRouter = express.Router();
 
 adminRouter.route("/car-listing").post(
-  authMiddleware,
+  // authMiddleware,
   upload.fields([
     { name: "images", maxCount: 10 },
     { name: "brandImage", maxCount: 1 },
