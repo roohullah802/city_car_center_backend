@@ -24,7 +24,7 @@ adminRouter.route("/delete/lease/:id").post(authMiddleware,adminMiddleware, dele
 adminRouter
   .route("/delete/car-listing/:id")
   .post(authMiddleware,adminMiddleware, deleteCarListing);
-adminRouter.route("/set-faqs").post(authMiddleware,adminMiddleware, setFAQs);
-adminRouter.route("/set-policy").post(authMiddleware,adminMiddleware, setPrivacypolicy);
+adminRouter.route("/set-faqs").post(setFAQs);
+adminRouter.route("/set-policy").post( setPrivacypolicy);
 
 export { adminRouter };
