@@ -184,10 +184,10 @@ export async function setFAQs(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
   const { question, answer } = req.body;
 
-  if (!userId) {
-    res.status(400).json({ success: false, message: "User not authorized" });
-    return;
-  }
+  // if (!userId) {
+  //   res.status(400).json({ success: false, message: "User not authorized" });
+  //   return;
+  // }
   if (!question || !answer) {
     res.status(400).json({
       success: false,
@@ -223,13 +223,13 @@ export async function setPrivacypolicy(
   const userId = req.user?.userId;
   const { title, description } = req.body;
 
-  if (!userId) {
-    res.status(401).json({
-      success: false,
-      message: "Unauthorized user. Please login to perform this action.",
-    });
-    return;
-  }
+  // if (!userId) {
+  //   res.status(401).json({
+  //     success: false,
+  //     message: "Unauthorized user. Please login to perform this action.",
+  //   });
+  //   return;
+  // }
 
   if (!title || !description) {
     res.status(400).json({
