@@ -5,6 +5,10 @@ import {
   deleteCarListing,
   setFAQs,
   setPrivacypolicy,
+  recentActivity,
+  totalUsers,
+  totalCars,
+  activeLeases
 } from "../../controllers/admin/admin.controller";
 import { adminMiddleware, authMiddleware } from "../../middleware/auth.middleware";
 import { compressAndResize, upload } from "../../lib/multer/multer";
@@ -26,5 +30,9 @@ adminRouter
   .post(authMiddleware,adminMiddleware, deleteCarListing);
 adminRouter.route("/set-faqs").post(setFAQs);
 adminRouter.route("/set-policy").post( setPrivacypolicy);
+adminRouter.route("/recent-activity").get(recentActivity);
+adminRouter.route("/totalUsers").get(totalUsers);
+adminRouter.route("/totalCars").get(totalCars);
+adminRouter.route("/activeLeases").get(activeLeases);
 
 export { adminRouter };

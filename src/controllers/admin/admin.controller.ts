@@ -7,6 +7,7 @@ import { Faq } from "../../models/faqs.model";
 import { Policy } from "../../models/policy.model";
 import fs from "fs";
 import { AdminActivity } from "../../models/adminActivity";
+import { User } from "../../models/user.model";
 
 export async function carListing(req: Request, res: Response): Promise<void> {
   const parsed = createCarSchema.safeParse(req.body);
@@ -288,5 +289,55 @@ export async function recentActivity(req: Request, res: Response): Promise<void>
   } catch (err) {
     console.error("❌ Error fetching admin activities:", err);
     res.status(500).json({ success: false, message: "Failed to fetch activities" });
+  }
+}
+
+export async function totalUsers(req:Request, res:Response):Promise<void> {
+  try {
+    const users = await User.find();
+
+    if (!users) {
+      res.status(400).json({success: false, message:"No user in DB"})
+      return
+    }
+
+    res.status(200).json({success: true, users})
+    
+  } catch (error) {
+    res.status(500).json({success: false, message:"failed to fetch users"})
+  }
+}
+
+
+export async function totalCars(req: Request, res:Response):Promise<void> {
+  try {
+    const cars = await Car.find().populate('modelName');
+
+    if (!cars) {
+      res.status(400).json({success: false, message:"cars not found"})
+      return
+    }
+
+    res.status(200).json({success: true, cars});
+    
+  } catch (error) {
+    res.status(500).json({success: false, message:"failed to fetch cars"})
+  }
+}
+
+export async function activeLeases(req: Request, res: Response): Promise<void> {
+  try {
+    const leases = await Lease.find({
+      startDate: {$lte: new Date()},
+      endDate: {$gte: new Date()}
+    });
+    if (!leases) {
+      res.status(400).json({success: false, message:"no lease found"})
+      return
+    }
+    
+    res.status(200).json({success: true, leases})
+  } catch (error) {
+    res.status(500).json({success: false, message:"failed to fetch active leases"})
   }
 }
