@@ -19,6 +19,7 @@ import { emailQueue } from "./src/lib/mail/emailQueues";
 import { Car } from "./src/models/car.model";
 import { Server } from "socket.io";
 import http from "http";
+import { AdminActivity } from "./src/models/adminActivity";
 
 dotenv.config();
 connectRedis();
@@ -85,7 +86,7 @@ app.post(
       );
     } catch (err: any) {
       console.error("⚠️ Webhook signature verification failed:", err.message);
-      res.status(400).json({success: false, message:"webhook failed"});
+      res.status(400).json({ success: false, message: "webhook failed" });
       return;
     }
 
@@ -95,7 +96,6 @@ app.post(
 
       const { action, userId, leaseId, carId, startDate, endDate, email } =
         paymentIntent.metadata;
-        
 
       try {
         if (action === "createLease" && userId && carId) {
@@ -128,6 +128,14 @@ app.post(
 
           // Notify clients via socket.io
           req.io.emit("leaseCreated", lease);
+
+          await AdminActivity.create({
+            action: "Lease Created",
+            user: userId,
+            lease: lease._id,
+            car: carId,
+            description: `User ${userId} booked car ${carId} from ${startDate} to ${endDate}`,
+          });
         }
 
         if (action === "extendLease" && userId && leaseId) {
@@ -149,14 +157,18 @@ app.post(
             // Send confirmation email
             await emailQueue.add(
               "leaseExtendedEmail",
-              { leaseId: lease._id, endDate,to: email },
+              { leaseId: lease._id, endDate, to: email },
               { attempts: 3, backoff: { type: "exponential", delay: 5000 } }
             );
 
             // Notify clients
             req.io.emit("leaseExtended", lease);
-
-            console.log("✅ Lease extended successfully:", lease._id);
+            await AdminActivity.create({
+              action: "Lease Extended",
+              user: userId,
+              lease: lease._id,
+              description: `User ${userId} extended lease ${leaseId} until ${endDate}`,
+            });
           }
         }
       } catch (err) {

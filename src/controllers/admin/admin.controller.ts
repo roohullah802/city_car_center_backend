@@ -6,6 +6,7 @@ import { redisClient } from "../../lib/redis/redis";
 import { Faq } from "../../models/faqs.model";
 import { Policy } from "../../models/policy.model";
 import fs from "fs";
+import { AdminActivity } from "../../models/adminActivity";
 
 export async function carListing(req: Request, res: Response): Promise<void> {
   const parsed = createCarSchema.safeParse(req.body);
@@ -184,10 +185,10 @@ export async function setFAQs(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
   const { question, answer } = req.body;
 
-  // if (!userId) {
-  //   res.status(400).json({ success: false, message: "User not authorized" });
-  //   return;
-  // }
+  if (!userId) {
+    res.status(400).json({ success: false, message: "User not authorized" });
+    return;
+  }
   if (!question || !answer) {
     res.status(400).json({
       success: false,
@@ -223,13 +224,13 @@ export async function setPrivacypolicy(
   const userId = req.user?.userId;
   const { title, description } = req.body;
 
-  // if (!userId) {
-  //   res.status(401).json({
-  //     success: false,
-  //     message: "Unauthorized user. Please login to perform this action.",
-  //   });
-  //   return;
-  // }
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized user. Please login to perform this action.",
+    });
+    return;
+  }
 
   if (!title || !description) {
     res.status(400).json({
@@ -269,5 +270,23 @@ export async function setPrivacypolicy(
       success: false,
       message: "Internal server error. Please try again later.",
     });
+  }
+}
+
+
+
+
+export async function recentActivity(req: Request, res: Response): Promise<void> {
+  try {
+    const activities = await AdminActivity.find()
+      .populate("user", "name email")
+      .populate("car", "make model")
+      .populate("lease", "_id startDate endDate status")
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, activities });
+  } catch (err) {
+    console.error("❌ Error fetching admin activities:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch activities" });
   }
 }
