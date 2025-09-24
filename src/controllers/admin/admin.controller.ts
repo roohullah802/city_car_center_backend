@@ -87,6 +87,7 @@ export async function adminSignup(req: Request, res: Response): Promise<void> {
     res.status(500).json({
       success: false,
       message: "Internal server error. Please try again.",
+      error
     });
   }
 }
