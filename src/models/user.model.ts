@@ -43,11 +43,9 @@ const userSchema = new Schema<UserDocument>(
     },
     provider:{
       type: String,
-      required:true
     },
     providerId: {
       type: String,
-      required: true
     }
   },
   {
