@@ -72,7 +72,14 @@ export async function adminSignup(req: Request, res: Response): Promise<void> {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     await redisClient.setEx(`verifyEmail:code`, 600, code);
     await redisClient.setEx(`user:${email}`, 86400, JSON.stringify(user));
-    await emailQueue.add("verifyEmailOtp", code);
+    await emailQueue.add("verifyEmailOtp", { code, to: email },
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 5000,
+        },
+      });
 
     res.status(201).json({
       success: true,
