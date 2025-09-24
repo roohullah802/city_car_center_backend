@@ -50,7 +50,7 @@ const corsOptions = {
     "http://localhost:8081", // React Native CLI
     "your-frontend-domain.com", // Production frontend
     "http://82.25.85.117:5000",
-    "http://localhost:5173/",
+    "http://localhost:5173",
     "https://api.citycarcenters.com",
   ],
   credentials: true, // If you're using cookies or auth headers
