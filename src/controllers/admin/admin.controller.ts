@@ -52,7 +52,7 @@ export async function adminSignup(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const hashedPassword = bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       name: fullName,
