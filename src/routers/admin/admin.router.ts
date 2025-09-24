@@ -8,12 +8,32 @@ import {
   recentActivity,
   totalUsers,
   totalCars,
-  activeLeases
+  activeLeases,
+  adminSignup,
+  adminLogin,
+  userLogout,
+  verifyEmail,
+  resendEmailOtp,
+  forgotPassword,
+  matchOtp,
+  resetPassword,
 } from "../../controllers/admin/admin.controller";
-import { adminMiddleware, authMiddleware } from "../../middleware/auth.middleware";
+import {
+  adminMiddleware,
+  authMiddleware,
+} from "../../middleware/auth.middleware";
 import { compressAndResize, upload } from "../../lib/multer/multer";
 
 const adminRouter = express.Router();
+
+adminRouter.route("/signup").post(adminSignup);
+adminRouter.route("/login").post(adminLogin);
+adminRouter.route("/logout").post(authMiddleware,userLogout);
+adminRouter.route("/verify-email").post(verifyEmail);
+adminRouter.route("/resend-email-otp").post(resendEmailOtp);
+adminRouter.route("/forgot-password").post(forgotPassword);
+adminRouter.route("/match").post(matchOtp);
+adminRouter.route("/reset-password").post(resetPassword);
 
 adminRouter.route("/car-listing").post(
   // authMiddleware,
@@ -24,12 +44,14 @@ adminRouter.route("/car-listing").post(
   compressAndResize,
   carListing
 );
-adminRouter.route("/delete/lease/:id").post(authMiddleware,adminMiddleware, deleteLease);
+adminRouter
+  .route("/delete/lease/:id")
+  .post(authMiddleware, adminMiddleware, deleteLease);
 adminRouter
   .route("/delete/car-listing/:id")
-  .post(authMiddleware,adminMiddleware, deleteCarListing);
+  .post(authMiddleware, adminMiddleware, deleteCarListing);
 adminRouter.route("/set-faqs").post(setFAQs);
-adminRouter.route("/set-policy").post( setPrivacypolicy);
+adminRouter.route("/set-policy").post(setPrivacypolicy);
 adminRouter.route("/recent-activity").get(recentActivity);
 adminRouter.route("/totalUsers").get(totalUsers);
 adminRouter.route("/totalCars").get(totalCars);

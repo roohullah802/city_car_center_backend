@@ -2,32 +2,31 @@ import { Worker, Job } from "bullmq";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 dotenv.config();
-import { connection } from './redis';
+import { connection } from "./redis";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.SMTP_USER || 'jaanroohullah83@gmail.com',
+    user: process.env.SMTP_USER || "jaanroohullah83@gmail.com",
     pass: process.env.SMTP_PASS,
   },
   tls: {
-      rejectUnauthorized: false
-    },
-    logger: true,
-    debug: true
+    rejectUnauthorized: false,
+  },
+  logger: true,
+  debug: true,
 });
-
 
 const worker = new Worker(
   "emailQueue",
   async (job: Job) => {
-    const { to } = job.data;  
+    const { to } = job.data;
 
     if (job.name === "leaseConfirmationEmail") {
       const { leaseId, startDate, endDate } = job.data;
 
       await transporter.sendMail({
-        from: process.env.SMTP_USER || 'jaanroohullah83@gmail.com',
+        from: process.env.SMTP_USER || "jaanroohullah83@gmail.com",
         to,
         subject: "Your Lease Confirmation",
         html: `
@@ -39,14 +38,13 @@ const worker = new Worker(
           <p>Thank you for using City Car Center!</p>
         `,
       });
-
     }
 
-    if (job.name === 'leaseExtendedEmail') {
-       const { leaseId, endDate } = job.data;
+    if (job.name === "leaseExtendedEmail") {
+      const { leaseId, endDate } = job.data;
 
       await transporter.sendMail({
-        from: process.env.SMTP_USER || 'jaanroohullah83@gmail.com',
+        from: process.env.SMTP_USER || "jaanroohullah83@gmail.com",
         to,
         subject: "Your Lease extension Confirmation",
         html: `
@@ -57,7 +55,35 @@ const worker = new Worker(
           <p>Thank you for using City Car Center!</p>
         `,
       });
+    }
 
+    if (job.name === "verifyEmailOtp") {
+      const { code } = job.data;
+      await transporter.sendMail({
+        from: process.env.SMTP_USER || "jaanroohullah83@gmail.com",
+        to,
+        subject: "Email verification code",
+        html: `
+          <p>Welcome to city car center</p>
+          <p>Your email verification code is:</p>
+             <strong>End:</strong> ${code}</p>
+          <p>Thank you for using City Car Center!</p>
+        `,
+      });
+    }
+
+    if (job.name === 'resendEmailOtp') {
+      const { code } = job.data;
+      await transporter.sendMail({
+        from: process.env.SMTP_USER || "jaanroohullah83@gmail.com",
+        to,
+        subject: "Again verification code ",
+        html: `
+          <p>Your  verification code is:</p>
+             <strong>End:</strong> ${code}</p>
+          <p>Thank you for using City Car Center!</p>
+        `,
+      });
     }
   },
   { connection }

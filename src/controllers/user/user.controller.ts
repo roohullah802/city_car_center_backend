@@ -33,7 +33,7 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
 
     let cars: any;
 
-    // 🔹 Try Redis cache first
+   
     const redisCarDetails = await redisClient.hGetAll(`carDetails:${id}`);
     if (redisCarDetails && Object.keys(redisCarDetails).length > 0) {
       console.log(`Cache hit for car ${id}`);
@@ -49,7 +49,7 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
     } else {
       console.log(`Cache miss for car ${id}, fetching from DB...`);
 
-      // 🔹 Fetch from MongoDB
+
       const aggResult = await Car.aggregate([
         { $match: { _id: new mongoose.Types.ObjectId(id) } },
         {
@@ -78,7 +78,7 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
 
       cars = aggResult[0];
 
-      // 🔹 Save to Redis (only if cars is valid)
+     
       if (cars && typeof cars === "object") {
         const redisHash: Record<string, string> = {};
         for (const [field, value] of Object.entries(cars)) {
@@ -89,11 +89,11 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
         }
 
         await redisClient.hSet(`carDetails:${id}`, redisHash);
-        await redisClient.expire(`carDetails:${id}`, 86400); // cache for 1 day
+        await redisClient.expire(`carDetails:${id}`, 86400); 
       }
     }
 
-    // ✅ Respond
+   
     res.status(200).json({
       success: true,
       message: "Car details fetched successfully.",
@@ -408,7 +408,7 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
   const leaseId = req.params.id as string;
 
   try {
-    // Ensure user is authenticated
+  
     if (!userId) {
       res.status(401).json({
         success: false,
@@ -417,7 +417,7 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // Ensure lease ID is provided
+
     if (!leaseId) {
       res
         .status(400)
@@ -425,7 +425,6 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // Try fetching lease details from Redis cache
     const redisLeaseDetails = await redisClient.get(`leaseDetails:${leaseId}`);
 
     let leaseDetails;
@@ -446,7 +445,7 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
         },
       ]);
 
-      // Store in Redis for caching
+  
       const key = `leaseDetails:${leaseId}`;
       await redisClient.setEx(key, 86400, JSON.stringify(leaseDetails));
     }
@@ -465,7 +464,7 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
   }
 }
 
-// Controller: Fetch all FAQs with Redis caching
+
 export async function getAllFAQs(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
 

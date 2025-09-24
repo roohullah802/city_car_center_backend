@@ -8,6 +8,8 @@ export interface UserDocument extends Document {
   role: string;
   provider: string;
   providerId: string;
+  password: string;
+  isAdminExist: boolean;
 }
 
 
@@ -32,6 +34,12 @@ const userSchema = new Schema<UserDocument>(
       type: String,
       enum: ['user', 'admin'],
       default: 'user'
+    },
+    isAdminExist: {
+      type: Boolean
+    },
+    password: {
+      type: String
     },
     provider:{
       type: String,
