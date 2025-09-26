@@ -17,8 +17,10 @@ import { emailQueue } from "../../lib/mail/emailQueues";
  * @access  Public or Protected (depending on your setup)
  */
 
-
-export async function getCarDetails(req: Request, res: Response): Promise<void> {
+export async function getCarDetails(
+  req: Request,
+  res: Response
+): Promise<void> {
   type CarId = { id: string };
   const { id } = req.params as CarId;
 
@@ -33,7 +35,6 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
 
     let cars: any;
 
-   
     const redisCarDetails = await redisClient.hGetAll(`carDetails:${id}`);
     if (redisCarDetails && Object.keys(redisCarDetails).length > 0) {
       console.log(`Cache hit for car ${id}`);
@@ -48,7 +49,6 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
       );
     } else {
       console.log(`Cache miss for car ${id}, fetching from DB...`);
-
 
       const aggResult = await Car.aggregate([
         { $match: { _id: new mongoose.Types.ObjectId(id) } },
@@ -78,7 +78,6 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
 
       cars = aggResult[0];
 
-     
       if (cars && typeof cars === "object") {
         const redisHash: Record<string, string> = {};
         for (const [field, value] of Object.entries(cars)) {
@@ -89,11 +88,10 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
         }
 
         await redisClient.hSet(`carDetails:${id}`, redisHash);
-        await redisClient.expire(`carDetails:${id}`, 86400); 
+        await redisClient.expire(`carDetails:${id}`, 86400);
       }
     }
 
-   
     res.status(200).json({
       success: true,
       message: "Car details fetched successfully.",
@@ -107,9 +105,6 @@ export async function getCarDetails(req: Request, res: Response): Promise<void> 
     });
   }
 }
-
-
-
 
 /**
  * @route   GET /api/cars
@@ -173,8 +168,6 @@ export async function getAllCars(req: Request, res: Response): Promise<void> {
     });
   }
 }
-
-
 
 /**
  * @route   GET /api/payment/history
@@ -400,15 +393,12 @@ export async function getAllBrands(req: Request, res: Response): Promise<void> {
   }
 }
 
-
-
 //  Get lease details by ID, with Redis caching
 export async function leaseDetails(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId as string;
   const leaseId = req.params.id as string;
 
   try {
-  
     if (!userId) {
       res.status(401).json({
         success: false,
@@ -416,7 +406,6 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
       });
       return;
     }
-
 
     if (!leaseId) {
       res
@@ -445,7 +434,6 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
         },
       ]);
 
-  
       const key = `leaseDetails:${leaseId}`;
       await redisClient.setEx(key, 86400, JSON.stringify(leaseDetails));
     }
@@ -463,7 +451,6 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
     });
   }
 }
-
 
 export async function getAllFAQs(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
@@ -593,7 +580,10 @@ export async function reportIssue(req: Request, res: Response): Promise<void> {
  * @route   GET /api/leases
  * @access  Private
  */
-export async function getAllLeases(req: Request, res: Response): Promise<void> {
+export async function getAllActiveLeases(
+  req: Request,
+  res: Response
+): Promise<void> {
   const userId = req.user?.userId;
 
   if (!userId) {
@@ -604,7 +594,7 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    const cachedLeases = await redisClient.get(`leases:${userId}`);
+    const cachedLeases = await redisClient.get(`ActiveLeases:${userId}`);
 
     if (cachedLeases) {
       const lease = JSON.parse(cachedLeases);
@@ -616,7 +606,11 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
 
     const lease = await Lease.aggregate([
       {
-        $match: { user: new mongoose.Types.ObjectId(userId) },
+        $match: {
+          user: new mongoose.Types.ObjectId(userId),
+          startDate: { $lte: new Date() },
+          endDate: { $gte: new Date() },
+        },
       },
       {
         $lookup: {
@@ -632,8 +626,12 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
       res.status(404).json({ success: false, message: "No lease data found" });
       return;
     }
-    
-    await redisClient.setEx(`leases:${userId}`, 86400, JSON.stringify(lease));
+
+    await redisClient.setEx(
+      `ActiveLeases:${userId}`,
+      86400,
+      JSON.stringify(lease)
+    );
 
     res
       .status(200)
@@ -643,3 +641,46 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
+
+
+
+
+export async function getAllLeases(req: Request, res: Response): Promise<void> {
+  const userId = req.user?.userId;
+  try {
+    const redisLease = await redisClient.get(`leases:${userId}`);
+   
+    if (redisLease) {
+     const leases = JSON.parse(redisLease);
+      res.status(200).json({success: true, leases});
+      return;
+    }
+     const leases = await Lease.find([
+      {
+        $match: { user: new mongoose.Types.ObjectId(userId) },
+      },
+      {
+        $lookup: {
+          from: "cars",
+          localField: "car",
+          foreignField: "_id",
+          as: "carDetails",
+        },
+      },
+    ]);
+
+    if (!leases || leases.length < 1) {
+      res.status(400).json({success: false, message:"leases not found"})
+      return
+    }
+    await redisClient.setEx(`leases:${userId}`, 86400, JSON.stringify(leases));
+
+    res.status(200).json({success: true, leases})
+    
+  } catch (error: any) {
+    res
+      .status(500)
+      .json({ success: false, message: "interval server error", error });
+  }
+}
+
