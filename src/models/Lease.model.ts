@@ -21,4 +21,16 @@ const leaseSchema = new Schema<LeaseDocument>(
   { timestamps: true }
 );
 
+leaseSchema.pre('find', async function (){
+  await Lease.updateMany(
+    {
+      endDate: {$lt: new Date()},
+      status: {$ne: "expired"}
+    },
+    {
+      $set: {status:"expired"}
+    }
+  )
+});
+
 export const Lease = model<LeaseDocument>("Lease", leaseSchema);
