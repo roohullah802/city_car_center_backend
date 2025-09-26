@@ -646,18 +646,18 @@ export async function getAllActiveLeases(
 
 
 export async function getAllLeases(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId;
+  // const userId = req.user?.userId;
   try {
-    const redisLease = await redisClient.get(`leases:${userId}`);
+  //   const redisLease = await redisClient.get(`leases:${userId}`);
    
-    if (redisLease) {
-     const leases = JSON.parse(redisLease);
-      res.status(200).json({success: true, leases});
-      return;
-    }
+    // if (redisLease) {
+    //  const leases = JSON.parse(redisLease);
+    //   res.status(200).json({success: true, leases});
+    //   return;
+    // }
      const leases = await Lease.find([
       {
-        $match: { user: new mongoose.Types.ObjectId(userId) },
+        $match: {},
       },
       {
         $lookup: {
@@ -673,7 +673,7 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
       res.status(400).json({success: false, message:"leases not found"})
       return
     }
-    await redisClient.setEx(`leases:${userId}`, 86400, JSON.stringify(leases));
+    // await redisClient.setEx(`leases:${userId}`, 86400, JSON.stringify(leases));
 
     res.status(200).json({success: true, leases})
     
@@ -683,4 +683,5 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
       .json({ success: false, message: "interval server error", error });
   }
 }
+
 
