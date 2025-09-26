@@ -655,7 +655,7 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
     //   res.status(200).json({success: true, leases});
     //   return;
     // }
-     const leases = await Lease.find([
+     const leases = await Lease.aggregate([
       {
         $match: {},
       },
