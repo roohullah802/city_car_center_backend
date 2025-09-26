@@ -226,11 +226,9 @@ export async function getPaymentDetails(
       await redisClient.expire(key, 86400);
     }
 
-    const totalPaid = leases.filter((l) => l.status === "completed").length;
-    const totalCancelled = leases.filter((l) => l.status === "cancel").length;
-    const totalPending = leases.filter((l) => l.status === "pending").length;
+    const totalPaid = leases.filter((l) => l.status === "active" && l.status === 'expired').length;
     const totalAmountPaid = leases
-      .filter((l) => l.status === "completed")
+      .filter((l) => l.status === "active" && l.status === 'expired')
       .reduce((sum, l) => sum + (l.totalAmount || 0), 0);
 
     res.status(200).json({
@@ -239,8 +237,6 @@ export async function getPaymentDetails(
       data: {
         totalLeases: leases.length,
         totalPaid,
-        totalPending,
-        totalCancelled,
         totalAmountPaid,
         leases: leases,
       },
@@ -298,7 +294,7 @@ export async function returnCar(req: Request, res: Response): Promise<void> {
 
     lease.isReturned = true;
     lease.returnedDate = new Date();
-    lease.status = "completed";
+    lease.status = "expired";
     await lease.save();
     await redisClient.set(`ExtendLease:${leaseId}`, JSON.stringify(lease), {
       EX: 86400,

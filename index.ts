@@ -105,7 +105,7 @@ app.post(
             car: carId,
             totalAmount: paymentIntent.amount / 100,
             paymentIntentId: paymentIntent.id,
-            status: "completed",
+            status: "active",
             startDate: new Date(startDate),
             endDate: new Date(endDate),
             paymentId: paymentIntent.id,
@@ -142,7 +142,7 @@ app.post(
           // Extend lease
           const lease = await Lease.findByIdAndUpdate(
             leaseId,
-            { endDate: new Date(endDate) },
+            { endDate: new Date(endDate), status: 'active' },
             { new: true }
           );
 

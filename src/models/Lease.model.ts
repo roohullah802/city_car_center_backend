@@ -14,8 +14,8 @@ const leaseSchema = new Schema<LeaseDocument>(
     paymentId: [{ type: String }],
     status: {
       type: String,
-      enum: ["pending", "completed", "cancel"],
-      default: "pending",
+      enum: ["active", 'expired'],
+      default: "active",
     },
   },
   { timestamps: true }
