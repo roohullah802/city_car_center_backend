@@ -20,6 +20,7 @@ import { Car } from "./src/models/car.model";
 import { Server } from "socket.io";
 import http from "http";
 import { AdminActivity } from "./src/models/adminActivity";
+import {startCronJob} from './src/lib/node_cron/node.cron';
 
 dotenv.config();
 connectRedis();
@@ -44,27 +45,13 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 const corsOptions = {
   origin: [
-    "http://localhost:3000", // React.js (local dev)
-    "http://127.0.0.1:5000", // alternate localhost
-    "http://localhost:19006", // React Native Web (Expo)
-    "http://localhost:8081", // React Native CLI
-    "your-frontend-domain.com", // Production frontend
-    "http://82.25.85.117:5000",
-    "http://localhost:5173",
+    "http://localhost:5173", 
     "https://api.citycarcenters.com",
   ],
-  credentials: true, // If you're using cookies or auth headers
+  credentials: true, 
 };
 
-// app.use(
-//   (req, res, next) => {
-//     if (req.originalUrl === "/api/payment/webhook") {
-//       next();
-//     } else {
-//       bodyParser.json()(req, res, next);
-//     }
-//   }
-// );
+
 
 const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
   apiVersion: "2025-05-28.basil",
@@ -104,7 +91,6 @@ app.post(
             user: userId,
             car: carId,
             totalAmount: paymentIntent.amount / 100,
-            paymentIntentId: paymentIntent.id,
             status: "active",
             startDate: new Date(startDate),
             endDate: new Date(endDate),
@@ -241,10 +227,12 @@ mongoose
   .then(() => {
     connectDB();
     console.log("MongoDB connected");
+    startCronJob();
     serverr.listen(5000, "0.0.0.0", () =>
       console.log(`Server running on port ${PORT}`)
     );
   })
+
   .catch((err) => {
     console.error("DB connection failed:", err);
   });

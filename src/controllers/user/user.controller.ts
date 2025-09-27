@@ -431,7 +431,7 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
       ]);
 
       const key = `leaseDetails:${leaseId}`;
-      await redisClient.setEx(key, 86400, JSON.stringify(leaseDetails));
+      await redisClient.setEx(key, 7200, JSON.stringify(leaseDetails));
     }
 
     res.status(200).json({
@@ -625,7 +625,7 @@ export async function getAllActiveLeases(
 
     await redisClient.setEx(
       `ActiveLeases:${userId}`,
-      86400,
+      7200,
       JSON.stringify(lease)
     );
 
@@ -669,7 +669,7 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
       res.status(400).json({success: false, message:"leases not found"})
       return
     }
-    // await redisClient.setEx(`leases:${userId}`, 86400, JSON.stringify(leases));
+    // await redisClient.setEx(`leases:${userId}`, 7200, JSON.stringify(leases));
 
     res.status(200).json({success: true, leases})
     
