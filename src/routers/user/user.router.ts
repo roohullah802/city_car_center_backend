@@ -13,7 +13,7 @@ userRouter.route("/all/faqs").get(getAllFAQs)
 userRouter.route("/all/policy").get(getAllPolicy)
 userRouter.route("/report/issue").post(authMiddleware, reportIssue)
 userRouter.route('/all/active/leases').get(authMiddleware, getAllActiveLeases)
-userRouter.route('/leases').get(getAllLeases);
+userRouter.route('/leases').get(authMiddleware,getAllLeases);
 userRouter.route('/lease/details/:id').get(authMiddleware, leaseDetails)
 
 export { userRouter }
