@@ -72,14 +72,17 @@ export async function adminSignup(req: Request, res: Response): Promise<void> {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     await redisClient.setEx(`verifyEmail:code`, 600, code);
     await redisClient.setEx(`user:${email}`, 86400, JSON.stringify(user));
-    await emailQueue.add("verifyEmailOtp", { code, to: email },
+    await emailQueue.add(
+      "verifyEmailOtp",
+      { code, to: email },
       {
         attempts: 3,
         backoff: {
           type: "exponential",
           delay: 5000,
         },
-      });
+      }
+    );
 
     res.status(201).json({
       success: true,
@@ -94,7 +97,7 @@ export async function adminSignup(req: Request, res: Response): Promise<void> {
     res.status(500).json({
       success: false,
       message: "Internal server error. Please try again.",
-      error
+      error,
     });
   }
 }
@@ -422,7 +425,7 @@ export async function matchOtp(req: Request, res: Response): Promise<void> {
       .status(200)
       .json({ success: true, message: "password matched successfully" });
   } catch (error) {
-    res.status(500).json({success: false, message:"internal server error"})
+    res.status(500).json({ success: false, message: "internal server error" });
   }
 }
 
@@ -510,8 +513,6 @@ export async function resetPassword(
       .json({ success: false, message: "Failed to reset password." });
   }
 }
-
-
 
 export async function carListing(req: Request, res: Response): Promise<void> {
   const parsed = createCarSchema.safeParse(req.body);
@@ -783,12 +784,11 @@ export async function recentActivity(
   res: Response
 ): Promise<void> {
   try {
-    const activities = await AdminActivity.find()
-      .populate("user", "name email")
-      .populate("car", "make model")
-      .populate("lease", "_id startDate endDate status")
-      .sort({ createdAt: -1 });
-
+    const activities = await AdminActivity.find();
+    if (!activities) {
+      res.status(400).json({success: false, message:"activities not founs"})
+      return;
+    }
     res.json({ success: true, activities });
   } catch (err) {
     console.error("❌ Error fetching admin activities:", err);
