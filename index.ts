@@ -153,6 +153,7 @@ app.post(
               action: "Lease Extended",
               user: userId,
               lease: lease._id,
+              car: carId,
               description: `User ${userId} extended lease ${leaseId} until ${endDate}`,
             });
           }
