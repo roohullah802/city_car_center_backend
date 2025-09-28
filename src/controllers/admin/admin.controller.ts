@@ -800,7 +800,7 @@ export async function recentActivity(
 
 export async function totalUsers(req: Request, res: Response): Promise<void> {
   try {
-    const users = await User.find();
+    const users = await User.countDocuments();
 
     if (!users) {
       res.status(400).json({ success: false, message: "No user in DB" });
@@ -815,7 +815,7 @@ export async function totalUsers(req: Request, res: Response): Promise<void> {
 
 export async function totalCars(req: Request, res: Response): Promise<void> {
   try {
-    const cars = await Car.find().populate("modelName");
+    const cars = await Car.countDocuments();
 
     if (!cars) {
       res.status(400).json({ success: false, message: "cars not found" });

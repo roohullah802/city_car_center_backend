@@ -36,7 +36,9 @@ adminRouter.route("/match").post(matchOtp);
 adminRouter.route("/reset-password").post(resetPassword);
 
 adminRouter.route("/car-listing").post(
-  // authMiddleware,
+  authMiddleware,
+  adminMiddleware
+  ,
   upload.fields([
     { name: "images", maxCount: 10 },
     { name: "brandImage", maxCount: 1 },
@@ -50,11 +52,11 @@ adminRouter
 adminRouter
   .route("/delete/car-listing/:id")
   .post(authMiddleware, adminMiddleware, deleteCarListing);
-adminRouter.route("/set-faqs").post(setFAQs);
-adminRouter.route("/set-policy").post(setPrivacypolicy);
-adminRouter.route("/recent-activity").get(recentActivity);
-adminRouter.route("/totalUsers").get(totalUsers);
-adminRouter.route("/totalCars").get(totalCars);
-adminRouter.route("/activeLeases").get(activeLeases);
+adminRouter.route("/set-faqs").post(authMiddleware,adminMiddleware,setFAQs);
+adminRouter.route("/set-policy").post(authMiddleware,adminMiddleware,setPrivacypolicy);
+adminRouter.route("/recent-activity").get(authMiddleware, adminMiddleware,recentActivity);
+adminRouter.route("/totalUsers").get(authMiddleware, adminMiddleware,totalUsers);
+adminRouter.route("/totalCars").get(authMiddleware,adminMiddleware,totalCars);
+adminRouter.route("/activeLeases").get(authMiddleware,adminMiddleware,activeLeases);
 
 export { adminRouter };
