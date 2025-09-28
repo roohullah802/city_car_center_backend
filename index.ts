@@ -121,7 +121,7 @@ app.post(
             user: userId,
             lease: lease._id,
             car: carId,
-            description: `User ${userId} booked car ${carId}  from ${formatDate(startDate)} to ${formatDate(endDate)}`,
+            description: `User ${userId} booked car ${carId}  from ${formatDate(startDate.toString())} to ${formatDate(endDate.toString())}`,
           });
         }
 
