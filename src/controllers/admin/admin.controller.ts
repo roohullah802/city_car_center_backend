@@ -846,3 +846,31 @@ export async function activeLeases(req: Request, res: Response): Promise<void> {
       .json({ success: false, message: "failed to fetch active leases" });
   }
 }
+
+
+export async function getOneWeekAllCars(req: Request, res: Response):Promise<void> {
+  const userId = req.user?.userId;
+  try {
+    if (!userId) {
+      res.status(400).json({success: false, message:"unauthorized please login first"})
+      return;
+    }
+
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const recentCars = await Car.find({
+      createdAt: {$gte: oneWeekAgo}
+    }).sort({createdAt: -1});
+
+    if (!recentCars) {
+      res.status(400).json({success: false, message:"cars not found"})
+      return;
+    }
+
+    res.status(200).json({success: true, cars: recentCars})
+    
+  } catch (error) {
+    res.status(500).json({success: false, message: "internal server error"})
+  }
+}

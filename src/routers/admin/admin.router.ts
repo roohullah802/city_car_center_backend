@@ -17,6 +17,7 @@ import {
   forgotPassword,
   matchOtp,
   resetPassword,
+  getOneWeekAllCars
 } from "../../controllers/admin/admin.controller";
 import {
   adminMiddleware,
@@ -58,5 +59,6 @@ adminRouter.route("/recent-activity").get(authMiddleware, adminMiddleware,recent
 adminRouter.route("/totalUsers").get(authMiddleware, adminMiddleware,totalUsers);
 adminRouter.route("/totalCars").get(authMiddleware,adminMiddleware,totalCars);
 adminRouter.route("/activeLeases").get(authMiddleware,adminMiddleware,activeLeases);
+adminRouter.route('/recent-cars').get(authMiddleware, adminMiddleware, getOneWeekAllCars)
 
 export { adminRouter };
