@@ -21,6 +21,7 @@ import { Server } from "socket.io";
 import http from "http";
 import { AdminActivity } from "./src/models/adminActivity";
 import {startCronJob} from './src/lib/node_cron/node.cron';
+import { formatDate } from "./src/lib/formatDate";
 
 dotenv.config();
 connectRedis();
@@ -120,7 +121,7 @@ app.post(
             user: userId,
             lease: lease._id,
             car: carId,
-            description: `User ${userId} booked car ${carId} from ${startDate} to ${endDate}`,
+            description: `User ${userId} booked car ${carId}  from ${formatDate(startDate)} to ${formatDate(endDate)}`,
           });
         }
 
@@ -154,7 +155,7 @@ app.post(
               user: userId,
               lease: lease._id,
               car: carId,
-              description: `User ${userId} extended lease ${leaseId} until ${endDate}`,
+              description: `User ${email} extended lease ${leaseId} until ${formatDate(endDate)}`,
             });
           }
         }
