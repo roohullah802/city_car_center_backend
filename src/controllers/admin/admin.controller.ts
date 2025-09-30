@@ -14,6 +14,7 @@ import { loginSchema } from "../../lib/zod/zod.login";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { resetPassSchema } from "../../lib/zod/zod.resetPass";
+import mongoose from "mongoose";
 
 /**
  * @route   POST /api/auth/signup
@@ -786,7 +787,7 @@ export async function recentActivity(
   try {
     const activities = await AdminActivity.find();
     if (!activities) {
-      res.status(400).json({success: false, message:"activities not founs"})
+      res.status(400).json({ success: false, message: "activities not founs" });
       return;
     }
     res.json({ success: true, activities });
@@ -847,12 +848,16 @@ export async function activeLeases(req: Request, res: Response): Promise<void> {
   }
 }
 
-
-export async function getOneWeekAllCars(req: Request, res: Response):Promise<void> {
+export async function getOneWeekAllCars(
+  req: Request,
+  res: Response
+): Promise<void> {
   const userId = req.user?.userId;
   try {
     if (!userId) {
-      res.status(400).json({success: false, message:"unauthorized please login first"})
+      res
+        .status(400)
+        .json({ success: false, message: "unauthorized please login first" });
       return;
     }
 
@@ -860,17 +865,192 @@ export async function getOneWeekAllCars(req: Request, res: Response):Promise<voi
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
     const recentCars = await Car.find({
-      createdAt: {$gte: oneWeekAgo}
-    }).sort({createdAt: -1});
+      createdAt: { $gte: oneWeekAgo },
+    }).sort({ createdAt: -1 });
 
     if (!recentCars) {
-      res.status(400).json({success: false, message:"cars not found"})
+      res.status(400).json({ success: false, message: "cars not found" });
       return;
     }
 
-    res.status(200).json({success: true, cars: recentCars})
-    
+    res.status(200).json({ success: true, cars: recentCars });
   } catch (error) {
-    res.status(500).json({success: false, message: "internal server error"})
+    res.status(500).json({ success: false, message: "internal server error" });
+  }
+}
+
+export async function getOneWeekUsers(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const userId = req.user?.userId;
+  try {
+    if (!userId) {
+      res
+        .status(400)
+        .json({ success: false, message: "Unauthorized please login first" });
+      return;
+    }
+
+    const now = new Date();
+    now.setDate(now.getDate() - 7);
+
+    const users = await User.find({
+      createdAt: { $gte: now },
+    }).sort({ createdAt: -1 });
+
+    if (!users) {
+      res.status(400).json({ success: false, message: "Users not found" });
+      return;
+    }
+
+    res.status(200).json({ success: false, users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "internal server error" });
+  }
+}
+
+export async function activeUsers(req: Request, res: Response): Promise<void> {
+  const userId = req.user?.userId;
+  try {
+    if (!userId) {
+      res
+        .status(400)
+        .json({ success: false, message: "Unauthorized please login first" });
+      return;
+    }
+
+    const users = await Lease.find({
+      status: "active",
+    }).distinct("user");
+
+    const result = await User.find({
+      _id: { $in: users },
+    });
+
+    if (!result) {
+      res
+        .status(400)
+        .json({ success: false, message: "active users not found" });
+      return;
+    }
+
+    res.status(200).json({ success: false, users: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "internal server error" });
+  }
+}
+
+export async function AllUsers(req: Request, res: Response): Promise<void> {
+  const userId = req.user?.userId;
+  try {
+    if (!userId) {
+      res
+        .status(400)
+        .json({ success: false, message: "Unauthorized please login first" });
+      return;
+    }
+
+    const users = await User.find();
+
+    if (!users) {
+      res.status(400).json({ success: false, message: "Users not found" });
+      return;
+    }
+
+    res.status(200).json({ success: true, users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "internal server error" });
+  }
+}
+
+export async function deleteUser(req: Request, res: Response): Promise<void> {
+  const userid = req.user?.userId;
+  const { id } = req.params;
+  try {
+    if (!userid) {
+      res
+        .status(400)
+        .json({ success: false, message: "Unauthorized please login first" });
+      return;
+    }
+
+    const deletedUser = await User.findByIdAndDelete(id);
+    if (!deletedUser) {
+      res.status(400).json({ success: false, message: "User nt found" });
+      return;
+    }
+    const leasesUser = await Lease.find({ user: deletedUser._id });
+    const carIds = leasesUser.map((lease: any) => lease.car);
+
+    await Car.updateMany(
+      {
+        _id: { $in: carIds },
+      },
+      { $set: { available: true } }
+    );
+
+    await Lease.deleteMany({
+      user: deletedUser._id,
+    });
+    await redisClient.del(`AllCars:AllCars`);
+    await redisClient.del(`leases:${deletedUser._id}`);
+    await redisClient.del(`user:${deletedUser.email}`);
+  } catch (error) {
+    res.status(500).json({ success: false, message: "internal server error" });
+  }
+}
+
+export async function userDetails(req: Request, res: Response): Promise<void> {
+  const userId = req.user?.userId;
+  const { id } = req.params;
+  try {
+    if (!userId) {
+      res
+        .status(400)
+        .json({ success: false, message: "Unauthorized please login first" });
+      return;
+    }
+
+    const userDetailss = await User.findById(id);
+
+    if (!userDetailss) {
+      res.status(400).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    const totalLeases = await Lease.find({
+      user: userDetailss._id,
+    });
+
+    if (!totalLeases) {
+      res.status(400).json({ success: false, message: "Leases not found" });
+      return;
+    }
+
+    const leasesLength = totalLeases.length;
+    const totalPaid = totalLeases.reduce(
+      (accu, lease) => accu + Number(lease.totalAmount),
+      0
+    );
+    const activeLeases = totalLeases.filter(
+      (lease: any) => lease.status === "active"
+    );
+    const completedLeases = totalLeases.filter(
+      (lease: any) => lease.status === "expired"
+    );
+
+    res
+      .status(200)
+      .json({
+        success: true,
+        LeasesLength: leasesLength,
+        userDetailss,
+        totalPaid,
+        activeLeases,
+        completedLeases,
+      });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "internal server error" });
   }
 }
