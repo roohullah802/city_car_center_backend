@@ -17,7 +17,12 @@ import {
   forgotPassword,
   matchOtp,
   resetPassword,
-  getOneWeekAllCars
+  getOneWeekAllCars,
+  getOneWeekUsers,
+  activeUsers,
+  AllUsers,
+  deleteUser,
+  userDetails
 } from "../../controllers/admin/admin.controller";
 import {
   adminMiddleware,
@@ -60,5 +65,11 @@ adminRouter.route("/totalUsers").get(authMiddleware, adminMiddleware,totalUsers)
 adminRouter.route("/totalCars").get(authMiddleware,adminMiddleware,totalCars);
 adminRouter.route("/activeLeases").get(authMiddleware,adminMiddleware,activeLeases);
 adminRouter.route('/recent-cars').get(authMiddleware, adminMiddleware, getOneWeekAllCars)
+adminRouter.route('/new-users').get(authMiddleware, adminMiddleware, getOneWeekUsers)
+adminRouter.route('/active/users').get(authMiddleware, adminMiddleware, activeUsers)
+adminRouter.route('/all/users').get(authMiddleware, adminMiddleware, AllUsers)
+adminRouter.route('/delete/user/:id').delete(authMiddleware, adminMiddleware, deleteUser)
+adminRouter.route('/user/details/:id').get(authMiddleware, adminMiddleware, userDetails)
+
 
 export { adminRouter };
