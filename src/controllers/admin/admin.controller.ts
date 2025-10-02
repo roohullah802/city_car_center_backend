@@ -969,11 +969,12 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
     const userWithLeaseInfo = users.map((itm)=> {
       if (itm._id === userId) {
         return {
-          ...itm,
+          ...itm.toObject(),
           totalLeases: totalLeases.length,
           users: totalUsers
         }
       }
+      return itm.toObject()
     });
 
 
