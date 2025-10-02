@@ -965,7 +965,7 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
       user: userId
     })
 
-    res.status(200).json({ success: true, users, totalLeases: totalLeases.length });
+    res.status(200).json({ success: true, users, totalLeases: totalLeases.length, totl: totalLeases });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
   }
