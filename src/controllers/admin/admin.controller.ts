@@ -961,12 +961,23 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
       return;
     }
 
+
     const totalLeases = await Lease.find({
       user: userId
     })
 
-    const obj = {...users, totalLeases}
-    res.status(200).json({ success: true, users: obj });
+    const userWithLeaseInfo = users.map((itm)=> {
+      if (itm._id === userId) {
+        return {
+          ...itm,
+          totalLeases: totalLeases.length,
+          users: totalUsers
+        }
+      }
+    });
+
+
+    res.status(200).json({ success: true, users: userWithLeaseInfo });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
   }
