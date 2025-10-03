@@ -879,9 +879,6 @@ export async function getOneWeekAllCars(
   }
 }
 
-
-
-
 export async function getOneWeekUsers(
   req: Request,
   res: Response
@@ -962,26 +959,26 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
       return;
     }
 
-
-    const updatedUsers = users.map(async(itm) => {
-      const totalLeases = await Lease.countDocuments({user: userId});  
-      if (itm._id) {
-        if (itm._id.toString() === userId.toString()) {
-        return {
-          ...itm,
-          totalLeases
+    const updatedUser = Promise.all(
+      users.map(async (itm) => {
+        const totalLeases = await Lease.countDocuments({ user: userId });
+        if (itm._id) {
+          if (itm._id.toString() === userId.toString()) {
+            return {
+              ...itm,
+              totalLeases,
+            };
+          }
         }
-      }
-      }
-      return itm;
-    });
+        return itm;
+      })
+    );
 
-    res.status(200).json({ success: true, users: updatedUsers });
+    res.status(200).json({ success: true, users: updatedUser });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
   }
 }
-
 
 export async function deleteUser(req: Request, res: Response): Promise<void> {
   const userid = req.user?.userId;
@@ -1059,16 +1056,14 @@ export async function userDetails(req: Request, res: Response): Promise<void> {
       (lease: any) => lease.status === "expired"
     );
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        LeasesLength: leasesLength,
-        userDetailss,
-        totalPaid,
-        activeLeases,
-        completedLeases,
-      });
+    res.status(200).json({
+      success: true,
+      LeasesLength: leasesLength,
+      userDetailss,
+      totalPaid,
+      activeLeases,
+      completedLeases,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
   }
