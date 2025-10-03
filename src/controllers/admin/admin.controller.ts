@@ -966,9 +966,18 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
       user: userId
     })
 
+    const updatedUser = users.map((itm)=>{
+      if (itm._id === userId) {
+        return {
+          ...itm,
+          totalLeases
+        }
+      }
+      return itm
+    })
 
 
-    res.status(200).json({ success: true, users, totalLeases });
+    res.status(200).json({ success: true, users: updatedUser });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
   }
