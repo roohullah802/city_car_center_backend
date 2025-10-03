@@ -943,7 +943,7 @@ export async function activeUsers(req: Request, res: Response): Promise<void> {
 
 export async function AllUsers(req: Request, res: Response): Promise<void> {
   try {
-    const users = await User.find().lean(); // 🔥 lean makes them plain objects
+    const users = await User.find({role: {$ne: "admin"}}).lean();
 
     if (!users || users.length === 0) {
       res.status(400).json({ success: false, message: "Users not found" });
@@ -953,7 +953,7 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
     const updatedUsers = await Promise.all(
       users.map(async (u) => {
         const totalLeases = await Lease.countDocuments({ user: u._id });
-        return { ...u, totalLeases }; // always append
+        return { ...u, totalLeases };
       })
     );
 
