@@ -991,7 +991,7 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
       { $set: { available: true } }
     );
 
-    req.io.emit('userDeleted', deleteUser);
+    req.io.emit('userDeleted', {id});
 
     await Lease.deleteMany({
       user: deletedUser._id,
