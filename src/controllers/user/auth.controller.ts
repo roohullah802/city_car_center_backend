@@ -51,7 +51,9 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
         name,
         profile: picture,
       });
+      req.io.emit('userAdded', user)
     }
+    
     await redisClient.setEx(`user:${email}`, 86400, JSON.stringify(user));
 
     }
