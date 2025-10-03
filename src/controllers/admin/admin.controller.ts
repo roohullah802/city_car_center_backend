@@ -942,38 +942,28 @@ export async function activeUsers(req: Request, res: Response): Promise<void> {
 }
 
 export async function AllUsers(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId;
-
   try {
-    if (!userId) {
-      res
-        .status(400)
-        .json({ success: false, message: "Unauthorized please login first" });
-      return;
-    }
+    const users = await User.find().lean(); // 🔥 lean makes them plain objects
 
-    const users = await User.find().lean();
-
-    if (!users) {
+    if (!users || users.length === 0) {
       res.status(400).json({ success: false, message: "Users not found" });
       return;
     }
 
-    const updatedUser = await Promise.all(
-      users.map(async (itm) => {
-        const totalLeases = await Lease.countDocuments({ user: itm._id });
-        return {
-          ...itm,
-          totalLeases,
-        };
+    const updatedUsers = await Promise.all(
+      users.map(async (u) => {
+        const totalLeases = await Lease.countDocuments({ user: u._id });
+        return { ...u, totalLeases }; // always append
       })
     );
 
-    res.status(200).json({ success: true, users: updatedUser });
+    res.status(200).json({ success: true, users: updatedUsers });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ success: false, message: "internal server error" });
   }
 }
+
 
 export async function deleteUser(req: Request, res: Response): Promise<void> {
   const userid = req.user?.userId;
