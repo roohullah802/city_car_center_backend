@@ -959,7 +959,7 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const updatedUser = Promise.all(
+    const updatedUser = await Promise.all(
       users.map(async (itm) => {
         const totalLeases = await Lease.countDocuments({ user: userId });
         if (itm._id) {
