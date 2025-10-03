@@ -952,7 +952,7 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const users = await User.find();
+    const users = await User.find().lean();
 
     if (!users) {
       res.status(400).json({ success: false, message: "Users not found" });
