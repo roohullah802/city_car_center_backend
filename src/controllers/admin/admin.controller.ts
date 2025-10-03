@@ -962,16 +962,18 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const totalLeases = await Lease.find({ user: userId });
+    const totalLeases = await Lease.countDocuments({user: userId});
 
     const updatedUsers = users.map((itm) => {
       console.log(itm._id, userId);
       
-      if (String(itm._id) === userId.toString()) {
+      if (itm._id) {
+        if (itm._id.toString() === userId.toString()) {
         return {
           ...itm.toObject(),
-          totalLeases: totalLeases.length
+          totalLeases
         };
+      }
       }
       return itm.toObject();
     });
