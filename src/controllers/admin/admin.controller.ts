@@ -968,12 +968,12 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
       if (itm._id) {
         if (itm._id.toString() === userId.toString()) {
         return {
-          ...itm.toObject(),
+          ...itm,
           totalLeases
-        };
+        }
       }
       }
-      return itm.toObject();
+      return itm;
     });
 
     res.status(200).json({ success: true, users: updatedUsers });
