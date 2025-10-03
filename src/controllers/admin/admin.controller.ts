@@ -946,6 +946,7 @@ export async function activeUsers(req: Request, res: Response): Promise<void> {
 
 export async function AllUsers(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
+
   try {
     if (!userId) {
       res
@@ -961,27 +962,24 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    const totalLeases = await Lease.find({ user: userId });
 
-    const totalLeases = await Lease.find({
-      user: userId
-    })
-
-    const updatedUser = users.map((itm)=>{
-      if (itm?._id === userId) {
+    const updatedUsers = users.map((itm) => {
+      if (String(itm._id) === userId.toString()) {
         return {
           ...itm.toObject(),
           totalLeases: totalLeases.length
-        }
+        };
       }
-      return itm.toObject()
-    })
+      return itm.toObject();
+    });
 
-
-    res.status(200).json({ success: true, users: updatedUser });
+    res.status(200).json({ success: true, users: updatedUsers });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
   }
 }
+
 
 export async function deleteUser(req: Request, res: Response): Promise<void> {
   const userid = req.user?.userId;
