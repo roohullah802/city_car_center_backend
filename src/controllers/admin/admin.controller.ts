@@ -962,11 +962,9 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const totalLeases = await Lease.countDocuments({user: userId});
 
-    const updatedUsers = users.map((itm) => {
-      console.log(itm._id, userId);
-      
+    const updatedUsers = users.map(async(itm) => {
+      const totalLeases = await Lease.countDocuments({user: userId});  
       if (itm._id) {
         if (itm._id.toString() === userId.toString()) {
         return {
