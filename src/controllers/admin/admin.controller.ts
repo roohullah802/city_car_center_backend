@@ -978,7 +978,7 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
 
     const deletedUser = await User.findByIdAndDelete(id);
     if (!deletedUser) {
-      res.status(400).json({ success: false, message: "User nt found" });
+      res.status(400).json({ success: false, message: "User not found" });
       return;
     }
     const leasesUser = await Lease.find({ user: deletedUser._id });
@@ -990,6 +990,8 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
       },
       { $set: { available: true } }
     );
+
+    req.io.emit('userDeleted', deleteUser);
 
     await Lease.deleteMany({
       user: deletedUser._id,
