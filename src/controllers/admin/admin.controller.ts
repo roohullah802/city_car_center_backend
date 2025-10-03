@@ -965,6 +965,8 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
     const totalLeases = await Lease.find({ user: userId });
 
     const updatedUsers = users.map((itm) => {
+      console.log(itm._id, userId);
+      
       if (String(itm._id) === userId.toString()) {
         return {
           ...itm.toObject(),
