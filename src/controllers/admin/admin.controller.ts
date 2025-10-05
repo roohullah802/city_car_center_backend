@@ -674,6 +674,7 @@ export async function deleteCarListing(
 
     await redisClient.del(`AllCars:AllCars`);
     await redisClient.del(`carDetails:${carId}`);
+    req.io.emit('carDeleted', {carId});
 
     res
       .status(200)
@@ -1138,5 +1139,9 @@ export async function carDetails(req: Request, res: Response): Promise<void> {
       message: "Internal server error",
     });
   }
+}
+
+export async function ff(params:type) {
+  
 }
 
