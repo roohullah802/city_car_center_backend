@@ -1069,10 +1069,17 @@ export async function totalCarss(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    const totalLeased = await Lease.find();
+
+    const totalCarsWithTotalLeases = cars.map((car)=>{
+      const totalLeases = totalLeased.filter((l)=> l.car.toString()  === car?._id.toString()).length;
+      return {...car.toObject(), totalLeases}
+    })
+
     const carsLeased = cars.filter((c) => c.available === false);
     const availableCars = cars.filter((c) => c.available === true);
 
-    res.status(200).json({ success: true, cars, carsLeased, availableCars });
+    res.status(200).json({ success: true, cars, carsLeased, availableCars, totalCarsWithTotalLeases });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
   }
