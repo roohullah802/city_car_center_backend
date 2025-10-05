@@ -59,7 +59,7 @@ adminRouter
   .post(authMiddleware, adminMiddleware, deleteLease);
 adminRouter
   .route("/delete/car-listing/:id")
-  .post(authMiddleware, adminMiddleware, deleteCarListing);
+  .delete(authMiddleware, adminMiddleware, deleteCarListing);
 adminRouter.route("/set-faqs").post(authMiddleware,adminMiddleware,setFAQs);
 adminRouter.route("/set-policy").post(authMiddleware,adminMiddleware,setPrivacypolicy);
 adminRouter.route("/recent-activity").get(authMiddleware, adminMiddleware,recentActivity);
