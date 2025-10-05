@@ -666,7 +666,7 @@ export async function deleteCarListing(
       images.forEach((imgPath: string) => {
         const fileName = path.basename(imgPath);
         const filePath = path.join(
-          "https://api.citycarcenters.com/uploads/",
+          "/var/www/private_data/uploads/",
           fileName
         );
 
