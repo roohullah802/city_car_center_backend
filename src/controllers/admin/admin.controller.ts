@@ -14,7 +14,6 @@ import { loginSchema } from "../../lib/zod/zod.login";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { resetPassSchema } from "../../lib/zod/zod.resetPass";
-import mongoose from "mongoose";
 
 /**
  * @route   POST /api/auth/signup
@@ -1078,3 +1077,61 @@ export async function totalCarss(req: Request, res: Response): Promise<void> {
     res.status(500).json({ success: false, message: "internal server error" });
   }
 }
+
+export async function carDetails(req: Request, res: Response): Promise<void> {
+  const userId = req.user?.userId;
+  const { id } = req.params;
+
+  try {
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized — please login first",
+      });
+      return;
+    }
+
+    if (!id) {
+      res.status(400).json({
+        success: false,
+        message: "Please provide a car ID to fetch details",
+      });
+      return;
+    }
+
+    const carDetails = await Car.findById(id);
+    if (!carDetails) {
+      res.status(404).json({ success: false, message: "Car not found" });
+      return;
+    }
+
+    const currentCarLeases = await Lease.find({ car: id });
+
+    if (currentCarLeases.length === 0) {
+      res.status(404).json({ success: false, message: "No leases found for this car" });
+      return;
+    }
+
+    const totalRevenue = currentCarLeases.reduce(
+      (acc, curr) => acc + (curr.totalAmount || 0),
+      0
+    );
+
+    const activeLease = currentCarLeases.filter((l) => l.status === "active");
+
+    res.status(200).json({
+      success: true,
+      carDetails,
+      totalRevenue,
+      totalLeases: currentCarLeases.length,
+      activeLease,
+    });
+  } catch (error) {
+    console.error("Error fetching car details:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+

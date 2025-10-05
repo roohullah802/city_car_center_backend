@@ -23,7 +23,8 @@ import {
   AllUsers,
   deleteUser,
   userDetails,
-  totalCarss
+  totalCarss,
+  carDetails
 } from "../../controllers/admin/admin.controller";
 import {
   adminMiddleware,
@@ -72,7 +73,6 @@ adminRouter.route('/all/users').get(authMiddleware, adminMiddleware, AllUsers)
 adminRouter.route('/delete/user/:id').delete(authMiddleware, adminMiddleware, deleteUser)
 adminRouter.route('/user/details/:id').get(authMiddleware, adminMiddleware, userDetails)
 adminRouter.route('/total-cars-for-car-management').get(authMiddleware, adminMiddleware, totalCarss)
-
-
+adminRouter.route('/car-details/:id').get(authMiddleware, adminMiddleware, carDetails);
 
 export { adminRouter };
