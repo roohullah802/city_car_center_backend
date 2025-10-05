@@ -943,7 +943,7 @@ export async function activeUsers(req: Request, res: Response): Promise<void> {
 
 export async function AllUsers(req: Request, res: Response): Promise<void> {
   try {
-    const users = await User.find({role: {$ne: "admin"}}).lean();
+    const users = await User.find({ role: { $ne: "admin" } }).lean();
 
     if (!users || users.length === 0) {
       res.status(400).json({ success: false, message: "Users not found" });
@@ -963,7 +963,6 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
     res.status(500).json({ success: false, message: "internal server error" });
   }
 }
-
 
 export async function deleteUser(req: Request, res: Response): Promise<void> {
   const userid = req.user?.userId;
@@ -991,7 +990,7 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
       { $set: { available: true } }
     );
 
-    req.io.emit('userDeleted', {id});
+    req.io.emit("userDeleted", { id });
 
     await Lease.deleteMany({
       user: deletedUser._id,
@@ -1051,6 +1050,30 @@ export async function userDetails(req: Request, res: Response): Promise<void> {
       activeLeases,
       completedLeases,
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "internal server error" });
+  }
+}
+
+export async function totalCarss(req: Request, res: Response): Promise<void> {
+  const userId = req.user?.userId;
+  try {
+    if (!userId) {
+      res
+        .status(400)
+        .json({ success: false, message: "Unauthorized please login first" });
+      return;
+    }
+    const cars = await Car.find();
+    if (!cars) {
+      res.status(400).json({ success: false, message: "cars not found" });
+      return;
+    }
+
+    const carsLeased = cars.filter((c) => c.available === false);
+    const availableCars = cars.filter((c) => c.available === true);
+
+    res.status(200).json({ success: true, cars, carsLeased, availableCars });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
   }

@@ -22,7 +22,8 @@ import {
   activeUsers,
   AllUsers,
   deleteUser,
-  userDetails
+  userDetails,
+  totalCarss
 } from "../../controllers/admin/admin.controller";
 import {
   adminMiddleware,
@@ -70,6 +71,8 @@ adminRouter.route('/active/users').get(authMiddleware, adminMiddleware, activeUs
 adminRouter.route('/all/users').get(authMiddleware, adminMiddleware, AllUsers)
 adminRouter.route('/delete/user/:id').delete(authMiddleware, adminMiddleware, deleteUser)
 adminRouter.route('/user/details/:id').get(authMiddleware, adminMiddleware, userDetails)
+adminRouter.route('/total-cars-for-car-management').get(authMiddleware, adminMiddleware, totalCarss)
+
 
 
 export { adminRouter };
