@@ -14,6 +14,8 @@ import { loginSchema } from "../../lib/zod/zod.login";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { resetPassSchema } from "../../lib/zod/zod.resetPass";
+import { CarDocument } from "../../types/car.types";
+import { Types } from "mongoose";
 
 /**
  * @route   POST /api/auth/signup
@@ -1055,6 +1057,7 @@ export async function userDetails(req: Request, res: Response): Promise<void> {
 }
 
 export async function totalCarss(req: Request, res: Response): Promise<void> {
+
   const userId = req.user?.userId;
   try {
     if (!userId) {
@@ -1072,7 +1075,7 @@ export async function totalCarss(req: Request, res: Response): Promise<void> {
     const totalLeased = await Lease.find();
 
     const totalCarsWithTotalLeases = cars.map((car)=>{
-      const totalLeases = totalLeased.filter((l)=> l.car.toString()  === car?._id.toString()).length;
+      const totalLeases = totalLeased.filter((l)=> l.car.toString()  === car?._id).length;
       return {...car.toObject(), totalLeases}
     })
 
@@ -1113,11 +1116,6 @@ export async function carDetails(req: Request, res: Response): Promise<void> {
     }
 
     const currentCarLeases = await Lease.find({ car: id });
-
-    if (currentCarLeases.length === 0) {
-      res.status(404).json({ success: false, message: "No leases found for this car" });
-      return;
-    }
 
     const totalRevenue = currentCarLeases.reduce(
       (acc, curr) => acc + (curr.totalAmount || 0),
