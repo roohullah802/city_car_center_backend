@@ -1141,7 +1141,5 @@ export async function carDetails(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function ff(params:type) {
-  
-}
+
 
