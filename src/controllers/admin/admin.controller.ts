@@ -16,6 +16,7 @@ import jwt from "jsonwebtoken";
 import { resetPassSchema } from "../../lib/zod/zod.resetPass";
 import { CarDocument } from "../../types/car.types";
 import { Types } from "mongoose";
+import path from "path";
 
 /**
  * @route   POST /api/auth/signup
@@ -663,9 +664,16 @@ export async function deleteCarListing(
       }
 
       images.forEach((imgPath: string) => {
-        fs.unlink(imgPath, (err) => {
-          if (err) console.log("failed to delete image", imgPath, err);
-          else console.log("image deleted", imgPath);
+        const fileName = path.basename(imgPath);
+        const filePath = path.join(
+          "https://api.citycarcenters.com/uploads/",
+          fileName
+        );
+
+        fs.unlink(filePath, (err) => {
+          if (err)
+            console.error("❌ Failed to delete image:", filePath, err.message);
+          else console.log("✅ Image deleted:", filePath);
         });
       });
     }
@@ -674,7 +682,7 @@ export async function deleteCarListing(
 
     await redisClient.del(`AllCars:AllCars`);
     await redisClient.del(`carDetails:${carId}`);
-    req.io.emit('carDeleted', {carId});
+    req.io.emit("carDeleted", { carId });
 
     res
       .status(200)
@@ -1058,7 +1066,6 @@ export async function userDetails(req: Request, res: Response): Promise<void> {
 }
 
 export async function totalCarss(req: Request, res: Response): Promise<void> {
-
   const userId = req.user?.userId;
   try {
     if (!userId) {
@@ -1075,15 +1082,25 @@ export async function totalCarss(req: Request, res: Response): Promise<void> {
 
     const totalLeased = await Lease.find();
 
-    const totalCarsWithTotalLeases = cars.map((car)=>{
-      const totalLeases = totalLeased.filter((l)=> l.car.toString()  === car?._id).length;
-      return {...car.toObject(), totalLeases}
-    })
+    const totalCarsWithTotalLeases = cars.map((car) => {
+      const totalLeases = totalLeased.filter(
+        (l) => l.car.toString() === car?._id
+      ).length;
+      return { ...car.toObject(), totalLeases };
+    });
 
     const carsLeased = cars.filter((c) => c.available === false);
     const availableCars = cars.filter((c) => c.available === true);
 
-    res.status(200).json({ success: true, cars, carsLeased, availableCars, totalCarsWithTotalLeases });
+    res
+      .status(200)
+      .json({
+        success: true,
+        cars,
+        carsLeased,
+        availableCars,
+        totalCarsWithTotalLeases,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
   }
@@ -1140,6 +1157,3 @@ export async function carDetails(req: Request, res: Response): Promise<void> {
     });
   }
 }
-
-
-
