@@ -22,12 +22,12 @@ const carSchema = new Schema<CarDocument>(
     allowedMilleage: { type: Number, required: true },
     fuelType: {
       type: String,
-      enum: ['Petrol', 'Diesel', 'Electric', 'Hybrid'],
+      enum: ['petrol', 'diesel', 'electric', 'hybrid'],
       required: true,
     },
     transmission: {
       type: String,
-      enum: ['Manual', 'Automatic'],
+      enum: ['manual', 'automatic'],
       required: true,
     },
     description: { type: String },
