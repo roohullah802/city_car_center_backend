@@ -14,7 +14,7 @@ const carSchema = new Schema<CarDocument>(
     maxPower: { type: Number, required: true },
     mph: { type: Number, required: true },
     topSpeed: { type: Number, required: true },
-    available: { type: Boolean, required: true },
+    available: { type: Boolean, default: true },
     tax: { type: Number, required: true },
     weeklyRate: { type: Number, required: true },
     pricePerDay: { type: Number, required: true },
