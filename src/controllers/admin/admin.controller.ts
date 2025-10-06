@@ -1000,7 +1000,7 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
       { $set: { available: true } }
     );
 
-    req.io.emit("userDeleted", { id });
+    req.io.emit("userDeleted", { id, message:"Your account has been deleted by admin." });
 
     await Lease.deleteMany({
       user: deletedUser._id,
