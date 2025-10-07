@@ -66,6 +66,16 @@ export async function googleAuth(req: Request, res: Response): Promise<void> {
   }
 }
 
+export async function userLogout(req: Request, res: Response): Promise<void> {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+  res.status(200).json({ success: true, message: "Logout successful." });
+}
+
+
 
 export async function appleAuth(req: Request, res: Response): Promise<void> {
     try {
