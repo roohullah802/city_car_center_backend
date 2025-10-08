@@ -1132,7 +1132,7 @@ export async function carDetails(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const currentCarLeases = await Lease.find({ car: id });
+    const currentCarLeases = await Lease.find({ car: id }).populate('user');
 
     const totalRevenue = currentCarLeases.reduce(
       (acc, curr) => acc + (curr.totalAmount || 0),
