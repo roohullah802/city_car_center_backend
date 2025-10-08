@@ -1032,7 +1032,7 @@ export async function userDetails(req: Request, res: Response): Promise<void> {
 
     const totalLeases = await Lease.find({
       user: userDetailss._id,
-    });
+    }).populate('user');
 
     if (!totalLeases) {
       res.status(400).json({ success: false, message: "Leases not found" });
