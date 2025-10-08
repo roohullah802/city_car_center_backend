@@ -17,6 +17,7 @@ import { resetPassSchema } from "../../lib/zod/zod.resetPass";
 import { CarDocument } from "../../types/car.types";
 import { Types } from "mongoose";
 import path from "path";
+import { IssueReport } from "../../models/report.model";
 
 /**
  * @route   POST /api/auth/signup
@@ -560,7 +561,7 @@ export async function carListing(req: Request, res: Response): Promise<void> {
   const car = await Car.create({
     brand: brand.toLocaleLowerCase(),
     modelName: modelName.toLocaleLowerCase(),
-    year:Number(year),
+    year: Number(year),
     color,
     price: Number(price),
     passengers: Number(passengers),
@@ -664,10 +665,7 @@ export async function deleteCarListing(
 
       images.forEach((imgPath: string) => {
         const fileName = path.basename(imgPath);
-        const filePath = path.join(
-          "/var/www/private_data/uploads/",
-          fileName
-        );
+        const filePath = path.join("/var/www/private_data/uploads/", fileName);
 
         fs.unlink(filePath, (err) => {
           if (err)
@@ -999,7 +997,10 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
       { $set: { available: true } }
     );
 
-    req.io.emit("userDeleted", { id, message:"Your account has been deleted by admin." });
+    req.io.emit("userDeleted", {
+      id,
+      message: "Your account has been deleted by admin.",
+    });
 
     await Lease.deleteMany({
       user: deletedUser._id,
@@ -1032,7 +1033,7 @@ export async function userDetails(req: Request, res: Response): Promise<void> {
 
     const totalLeases = await Lease.find({
       user: userDetailss._id,
-    }).populate('car');
+    }).populate("car");
 
     if (!totalLeases) {
       res.status(400).json({ success: false, message: "Leases not found" });
@@ -1091,15 +1092,13 @@ export async function totalCarss(req: Request, res: Response): Promise<void> {
     const carsLeased = cars.filter((c) => c.available === false);
     const availableCars = cars.filter((c) => c.available === true);
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        cars,
-        carsLeased,
-        availableCars,
-        totalCarsWithTotalLeases,
-      });
+    res.status(200).json({
+      success: true,
+      cars,
+      carsLeased,
+      availableCars,
+      totalCarsWithTotalLeases,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
   }
@@ -1132,7 +1131,7 @@ export async function carDetails(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const currentCarLeases = await Lease.find({ car: id }).populate('user');
+    const currentCarLeases = await Lease.find({ car: id }).populate("user");
 
     const totalRevenue = currentCarLeases.reduce(
       (acc, curr) => acc + (curr.totalAmount || 0),
@@ -1154,5 +1153,46 @@ export async function carDetails(req: Request, res: Response): Promise<void> {
       success: false,
       message: "Internal server error",
     });
+  }
+}
+
+export async function userComplains(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const userId = req.user?.userId;
+  try {
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized — please login first",
+      });
+      return;
+    }
+
+    const redisComplain = await redisClient.get(`complains:${userId}`);
+    let complains;
+    if (redisComplain) {
+      complains = JSON.parse(redisComplain);
+    } else {
+      complains = await IssueReport.find().populate("user");
+
+      if (!complains) {
+        res.status(401).json({
+          success: false,
+          message: "No complains yet!",
+        });
+        return;
+      }
+      await redisClient.setEx(
+        `complains:${userId}`,
+        86400,
+        JSON.stringify(complains)
+      );
+    }
+
+    res.status(200).json({ success: false, complains });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "internal server error" });
   }
 }
