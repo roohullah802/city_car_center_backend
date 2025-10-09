@@ -24,7 +24,8 @@ import {
   deleteUser,
   userDetails,
   totalCarss,
-  carDetails
+  carDetails,
+  userComplains
 } from "../../controllers/admin/admin.controller";
 import {
   adminMiddleware,
@@ -36,7 +37,7 @@ const adminRouter = express.Router();
 
 adminRouter.route("/signup").post(adminSignup);
 adminRouter.route("/login").post(adminLogin);
-adminRouter.route("/logout").post(authMiddleware,userLogout);
+adminRouter.route("/logout").post(authMiddleware,adminMiddleware,userLogout);
 adminRouter.route("/verify-email").post(verifyEmail);
 adminRouter.route("/resend-email-otp").post(resendEmailOtp);
 adminRouter.route("/forgot-password").post(forgotPassword);
@@ -74,5 +75,6 @@ adminRouter.route('/delete/user/:id').delete(authMiddleware, adminMiddleware, de
 adminRouter.route('/user/details/:id').get(authMiddleware, adminMiddleware, userDetails)
 adminRouter.route('/total-cars-for-car-management').get(authMiddleware, adminMiddleware, totalCarss)
 adminRouter.route('/car-details/:id').get(authMiddleware, adminMiddleware, carDetails);
+adminRouter.route('/user-complains').get(authMiddleware, adminMiddleware, userComplains);
 
 export { adminRouter };
