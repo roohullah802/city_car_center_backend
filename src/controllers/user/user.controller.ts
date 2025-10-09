@@ -556,7 +556,7 @@ export async function reportIssue(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    await redisClient.del(`complains:${userId}`);
+    await redisClient.del(`complains:complains`);
 
     res.status(201).json({
       success: true,

@@ -1170,7 +1170,7 @@ export async function userComplains(
       return;
     }
 
-    const redisComplain = await redisClient.get(`complains:${userId}`);
+    const redisComplain = await redisClient.get(`complains:complains`);
     let complains;
     if (redisComplain) {
       complains = JSON.parse(redisComplain);
@@ -1185,7 +1185,7 @@ export async function userComplains(
         return;
       }
       await redisClient.setEx(
-        `complains:${userId}`,
+        `complains:complains`,
         86400,
         JSON.stringify(complains)
       );
