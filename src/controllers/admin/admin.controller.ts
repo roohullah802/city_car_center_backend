@@ -1175,7 +1175,7 @@ export async function userComplains(
     if (redisComplain) {
       complains = JSON.parse(redisComplain);
     } else {
-      complains = await IssueReport.find().populate("user");
+      complains = await IssueReport.find().populate("userId");
 
       if (!complains) {
         res.status(401).json({
