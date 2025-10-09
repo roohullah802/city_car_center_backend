@@ -18,6 +18,7 @@ import { CarDocument } from "../../types/car.types";
 import { Types } from "mongoose";
 import path from "path";
 import { IssueReport } from "../../models/report.model";
+import { Primitive } from "zod";
 
 /**
  * @route   POST /api/auth/signup
@@ -1194,5 +1195,31 @@ export async function userComplains(
     res.status(200).json({ success: false, complains });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
+  }
+}
+
+
+export async function transactions(req: Request, res:Response):Promise<void> {
+  const userId = req.user?.userId;
+  try {
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized — please login first",
+      });
+      return;
+    }
+    const leases = await Lease.find().populate('user').populate('car');
+    if (!leases) {
+      res.status(401).json({success: false, message:"No transactions found"})
+      return;
+    }
+    const totalRevenue = leases.reduce((accu, curr)=> accu + curr.totalAmount,0);
+    const totalTransactions = leases.length;
+
+    res.status(200).json({success: true, leases, totalTransactions, totalRevenue})
+    
+  } catch (error) {
+    res.status(500).json({success: false, message:"internal server error"})
   }
 }
