@@ -25,7 +25,8 @@ import {
   userDetails,
   totalCarss,
   carDetails,
-  userComplains
+  userComplains,
+  transactions
 } from "../../controllers/admin/admin.controller";
 import {
   adminMiddleware,
@@ -76,5 +77,6 @@ adminRouter.route('/user/details/:id').get(authMiddleware, adminMiddleware, user
 adminRouter.route('/total-cars-for-car-management').get(authMiddleware, adminMiddleware, totalCarss)
 adminRouter.route('/car-details/:id').get(authMiddleware, adminMiddleware, carDetails);
 adminRouter.route('/user-complains').get(authMiddleware, adminMiddleware, userComplains);
+adminRouter.route('/transactions').get(authMiddleware, adminMiddleware, transactions);
 
 export { adminRouter };
