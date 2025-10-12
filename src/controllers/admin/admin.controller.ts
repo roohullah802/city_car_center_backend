@@ -19,6 +19,7 @@ import { Types } from "mongoose";
 import path from "path";
 import { IssueReport } from "../../models/report.model";
 import { Primitive } from "zod";
+import { createUpdateCarSchema } from "../../lib/zod/zod.update.car";
 
 /**
  * @route   POST /api/auth/signup
@@ -1198,8 +1199,7 @@ export async function userComplains(
   }
 }
 
-
-export async function transactions(req: Request, res:Response):Promise<void> {
+export async function transactions(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
   try {
     if (!userId) {
@@ -1209,17 +1209,107 @@ export async function transactions(req: Request, res:Response):Promise<void> {
       });
       return;
     }
-    const leases = await Lease.find().populate('user').populate('car');
+    const leases = await Lease.find().populate("user").populate("car");
     if (!leases) {
-      res.status(401).json({success: false, message:"No transactions found"})
+      res
+        .status(401)
+        .json({ success: false, message: "No transactions found" });
       return;
     }
-    const totalRevenue = leases.reduce((accu, curr)=> accu + curr.totalAmount,0);
+    const totalRevenue = leases.reduce(
+      (accu, curr) => accu + curr.totalAmount,
+      0
+    );
     const totalTransactions = leases.length;
 
-    res.status(200).json({success: true, leases, totalTransactions, totalRevenue})
-    
+    res
+      .status(200)
+      .json({ success: true, leases, totalTransactions, totalRevenue });
   } catch (error) {
-    res.status(500).json({success: false, message:"internal server error"})
+    res.status(500).json({ success: false, message: "internal server error" });
+  }
+}
+
+export async function updateCar(req: Request, res: Response): Promise<void> {
+  const userId = req.user?.userId;
+  const {id} = req.params;
+  try {
+    const parsed = createUpdateCarSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        message: "Validation error",
+        errors: parsed.error.flatten().fieldErrors,
+      });
+      return;
+    }
+    if (!userId) {
+      res
+        .status(401)
+        .json({ success: false, message: "Unautorized for update this car" });
+      return;
+    }
+
+    const {
+      brand,
+      modelName,
+      year,
+      color,
+      price,
+      passengers,
+      doors,
+      airCondition,
+      maxPower,
+      mph,
+      topSpeed,
+      tax,
+      weeklyRate,
+      pricePerDay,
+      initialMileage,
+      allowedMilleage,
+      fuelType,
+      transmission,
+      description,
+    } = parsed.data;
+
+    const updatedCar = await Car.findByIdAndUpdate(id, {
+      brand,
+      modelName,
+      year,
+      color,
+      price,
+      passengers,
+      doors,
+      airCondition,
+      maxPower,
+      mph,
+      topSpeed,
+      tax,
+      weeklyRate,
+      pricePerDay,
+      initialMileage,
+      allowedMilleage,
+      fuelType,
+      transmission,
+      description,
+    });
+
+    if (!updatedCar) {
+      res.status(400).json({ success: false, message: "Car updation failed" });
+      return;
+    }
+
+    res
+      .status(200)
+      .json({ success: true, message: "Car updated successfully", updatedCar });
+
+    req.io.emit('carUpdated', updatedCar);
+    await redisClient.del(`AllCars:AllCars`);
+    await redisClient.del(`carDetails:${id}`);  
+
+
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 }

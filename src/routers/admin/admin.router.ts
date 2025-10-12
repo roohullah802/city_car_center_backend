@@ -26,7 +26,8 @@ import {
   totalCarss,
   carDetails,
   userComplains,
-  transactions
+  transactions,
+  updateCar
 } from "../../controllers/admin/admin.controller";
 import {
   adminMiddleware,
@@ -78,5 +79,6 @@ adminRouter.route('/total-cars-for-car-management').get(authMiddleware, adminMid
 adminRouter.route('/car-details/:id').get(authMiddleware, adminMiddleware, carDetails);
 adminRouter.route('/user-complains').get(authMiddleware, adminMiddleware, userComplains);
 adminRouter.route('/transactions').get(authMiddleware, adminMiddleware, transactions);
+adminRouter.route('/update-car/:id').patch(authMiddleware, adminMiddleware, updateCar);
 
 export { adminRouter };
