@@ -1292,7 +1292,7 @@ export async function updateCar(req: Request, res: Response): Promise<void> {
       fuelType,
       transmission,
       description,
-    });
+    },{new: true});
 
     if (!updatedCar) {
       res.status(400).json({ success: false, message: "Car updation failed" });
