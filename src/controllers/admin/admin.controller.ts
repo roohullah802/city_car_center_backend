@@ -1250,49 +1250,9 @@ export async function updateCar(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const {
-      brand,
-      modelName,
-      year,
-      color,
-      price,
-      passengers,
-      doors,
-      airCondition,
-      maxPower,
-      mph,
-      topSpeed,
-      tax,
-      weeklyRate,
-      pricePerDay,
-      initialMileage,
-      allowedMilleage,
-      fuelType,
-      transmission,
-      description,
-    } = parsed.data;
+  
 
-    const updatedCar = await Car.findByIdAndUpdate(id, {
-      brand,
-      modelName,
-      year,
-      color,
-      price,
-      passengers,
-      doors,
-      airCondition,
-      maxPower,
-      mph,
-      topSpeed,
-      tax,
-      weeklyRate,
-      pricePerDay,
-      initialMileage,
-      allowedMilleage,
-      fuelType,
-      transmission,
-      description,
-    },{new: true});
+    const updatedCar = await Car.findByIdAndUpdate(id, parsed.data,{new: true});
 
     if (!updatedCar) {
       res.status(400).json({ success: false, message: "Car updation failed" });
