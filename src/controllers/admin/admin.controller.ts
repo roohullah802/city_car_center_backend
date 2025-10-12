@@ -1234,7 +1234,6 @@ export async function updateCar(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
   const {id} = req.params;
   try {
-    console.log('req body', req.body);
     
     const parsed = createUpdateCarSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -1252,8 +1251,6 @@ export async function updateCar(req: Request, res: Response): Promise<void> {
       return;
     }
 
-  
-    console.log(parsed.data);
     
     const updatedCar = await Car.findByIdAndUpdate(id, { $set: parsed.data },{new: true});
 
