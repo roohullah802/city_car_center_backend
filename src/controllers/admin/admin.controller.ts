@@ -1251,8 +1251,9 @@ export async function updateCar(req: Request, res: Response): Promise<void> {
     }
 
   
-
-    const updatedCar = await Car.findByIdAndUpdate(id, parsed.data,{new: true});
+    console.log(parsed.data);
+    
+    const updatedCar = await Car.findByIdAndUpdate(id, { $set: parsed.data },{new: true});
 
     if (!updatedCar) {
       res.status(400).json({ success: false, message: "Car updation failed" });
