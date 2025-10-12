@@ -1234,6 +1234,8 @@ export async function updateCar(req: Request, res: Response): Promise<void> {
   const userId = req.user?.userId;
   const {id} = req.params;
   try {
+    console.log('req body', req.body);
+    
     const parsed = createUpdateCarSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({
