@@ -46,8 +46,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 const corsOptions = {
   origin: [
-    "http://localhost:5173", 
-    "https://api.citycarcenters.com",
+    // "http://localhost:5173", 
+    "https://admin.citycarcenters.com",
   ],
   credentials: true, 
 };
