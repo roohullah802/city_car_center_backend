@@ -16,4 +16,4 @@ userRouter.route('/all/active/leases').get(authMiddleware, getAllActiveLeases)
 userRouter.route('/leases').get(authMiddleware,getAllLeases);
 userRouter.route('/lease/details/:id').get(authMiddleware, leaseDetails)
 
-export { userRouter }
+export { userRouter } 
