@@ -102,7 +102,7 @@ app.post(
           await Car.findByIdAndUpdate(carId, { available: false });
 
           // Update Redis cache
-          await redisClient.hSet(`carDetails:${carId}`, "available", "false");
+          await redisClient.del(`carDetails:${carId}`);
           await redisClient.del(`leases:${userId}`);
           await redisClient.del(`leasePaymentHistory:${userId}`);
 
