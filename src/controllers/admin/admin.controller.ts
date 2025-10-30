@@ -678,7 +678,7 @@ export async function deleteCarListing(
     }
 
     await Car.findByIdAndDelete(carId);
-
+    await redisClient.del(`AllBrands:AllBrands`);
     await redisClient.del(`AllCars:AllCars`);
     await redisClient.del(`carDetails:${carId}`);
     req.io.emit("carDeleted", { carId });
