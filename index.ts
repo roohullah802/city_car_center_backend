@@ -103,6 +103,7 @@ app.post(
 
           // Update Redis cache
           await redisClient.del(`carDetails:${carId}`);
+          await redisClient.del('AllCars:AllCars');
           await redisClient.del(`leases:${userId}`);
           await redisClient.del(`leasePaymentHistory:${userId}`);
 
