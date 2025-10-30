@@ -54,7 +54,8 @@ router.post(
           return;
         }
       }
-
+      console.log(car.available);
+      
       if (!car.available) {
         res.status(400).json({
           success: false,
