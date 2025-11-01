@@ -9,14 +9,6 @@ import {
   totalUsers,
   totalCars,
   activeLeases,
-  // adminSignup,
-  // adminLogin,
-  userLogout,
-  // verifyEmail,
-  // resendEmailOtp,
-  // forgotPassword,
-  // matchOtp,
-  // resetPassword,
   getOneWeekAllCars,
   getOneWeekUsers,
   activeUsers,
@@ -33,15 +25,6 @@ import { compressAndResize, upload } from "../../lib/multer/multer";
 import {ClerkExpressRequireAuth} from '@clerk/clerk-sdk-node'
 
 const adminRouter = express.Router();
-
-// adminRouter.route("/signup").post(adminSignup);
-// adminRouter.route("/login").post(adminLogin);
-adminRouter.route("/logout").post(ClerkExpressRequireAuth() as unknown as express.RequestHandler,userLogout);
-// adminRouter.route("/verify-email").post(verifyEmail);
-// adminRouter.route("/resend-email-otp").post(resendEmailOtp);
-// adminRouter.route("/forgot-password").post(forgotPassword);
-// adminRouter.route("/match").post(matchOtp);
-// adminRouter.route("/reset-password").post(resetPassword);
 
 adminRouter.route("/car-listing").post(
   ClerkExpressRequireAuth() as unknown as express.RequestHandler

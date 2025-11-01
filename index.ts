@@ -182,7 +182,7 @@ app.post(
   }
 );
 
-app.use(ClerkExpressRequireAuth() as unknown as express.RequestHandler);
+
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());
@@ -192,6 +192,8 @@ app.use("/api/user/auth", userAuthRouter);
 app.use("/api/user", userRouter);
 app.use("/api/v1/secure/route/admin", adminRouter);
 app.use("/api/payment", paymentRoutes);
+
+app.use(ClerkExpressRequireAuth() as unknown as express.RequestHandler);
 
 const PORT = process.env.PORT || 5000;
 
