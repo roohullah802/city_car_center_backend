@@ -312,6 +312,7 @@ export async function totalUsers(req: Request, res: Response): Promise<void> {
 
     res.status(200).json({ success: true, users });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ success: false, message: "failed to fetch users" });
   }
 }
