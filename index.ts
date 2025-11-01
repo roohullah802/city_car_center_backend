@@ -25,6 +25,7 @@ import { startCronJob } from "./src/lib/node_cron/node.cron";
 import { formatDate } from "./src/lib/formatDate";
 import { clerkMiddleware } from "@clerk/express";
 import { User } from "./src/models/user.model";
+import { Webhook } from "svix";
 
 connectRedis();
 
@@ -58,32 +59,59 @@ const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
   apiVersion: "2025-05-28.basil",
 });
 
-app.post("/clerk-webhook", bodyParser.json(), async (req, res) => {
-  const event = req.body;
 
-  if (event.type === "user.created") {
-    const clerkUser = event.data;
+const CLERK_WEBHOOK_SECRETT = process.env.CLERK_WEBHOOK_SECRET;
+if (!CLERK_WEBHOOK_SECRETT) {
+   throw new Error("Missing CLERK_WEBHOOK_SECRET in .env");
+}
+
+app.post(
+  "/clerk-webhook",bodyParser.raw({ type: "application/json" }),async (req: Request, res: Response): Promise<void> => {
+    const payload = req.body;
+    const headers = req.headers;
+
+    
+    const wh = new Webhook(CLERK_WEBHOOK_SECRETT!);
+    let event: { type: string; data: any };
+
 
     try {
-      const newUser = new User({
-        clerkId: clerkUser.id,
-        email: clerkUser.emailAddresses[0]?.emailAddress,
-        profile: clerkUser.profileImageUrl || "",
-        name: clerkUser.fullName || "",
-      });
-
-      await newUser.save();
-
-      console.log("User created in MongoDB:", newUser.email);
-      res.status(200).json({ message: "User saved in MongoDB" });
+      event = wh.verify(
+        payload,
+        {
+          "webhook-id": headers["webhook-id"] as string,
+          "webhook-timestamp": headers["webhook-timestamp"] as string,
+          "webhook-signature": headers["webhook-signature"] as string,
+        }
+      ) as { type: string; data: any };
     } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Error saving user" });
+      console.error("Webhook verification failed:", err);
+      res.status(400).json({ error: "Invalid webhook signature" });
+      return;
     }
-  } else {
-    res.status(200).json({ message: "Event ignored" });
+
+    
+    if (event.type === "user.created") {
+      const clerkUser = event.data;
+
+      try {
+        const newUser = new User({
+          clerkId: clerkUser.id,
+          email: clerkUser.email_addresses[0]?.email_address,
+          name: `${clerkUser.first_name || ""} ${clerkUser.last_name || ""}`.trim(),
+          profile: clerkUser.image_url || "",
+        });
+
+        await newUser.save();
+        console.log(" User saved:", newUser.email);
+      } catch (err) {
+        console.error(" MongoDB save failed:", err);
+      }
+    }
+
+    res.status(200).json({ message: "Webhook processed" });
   }
-});
+);
 
 // Webhook route
 app.post(

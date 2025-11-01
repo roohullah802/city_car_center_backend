@@ -39,6 +39,7 @@
     "sharp": "^0.34.3",
     "socket.io": "^4.8.1",
     "stripe": "^18.2.1",
+    "svix": "^1.81.0",
     "zod": "^3.25.67"
   },
   "devDependencies": {
