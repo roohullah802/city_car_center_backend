@@ -193,7 +193,7 @@ app.use("/api/user", userRouter);
 app.use("/api/v1/secure/route/admin", adminRouter);
 app.use("/api/payment", paymentRoutes);
 
-app.use(clerkMiddleware());
+app.use(clerkMiddleware({secretKey: process.env.CLERK_SECRET_KEY}));
 
 const PORT = process.env.PORT || 5000;
 
