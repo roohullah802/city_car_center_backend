@@ -188,12 +188,13 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(clerkMiddleware({secretKey: process.env.CLERK_SECRET_KEY}));
 app.use("/api/user/auth", userAuthRouter);
 app.use("/api/user", userRouter);
 app.use("/api/v1/secure/route/admin", adminRouter);
 app.use("/api/payment", paymentRoutes);
 
-app.use(clerkMiddleware({secretKey: process.env.CLERK_SECRET_KEY}));
+
 
 const PORT = process.env.PORT || 5000;
 
