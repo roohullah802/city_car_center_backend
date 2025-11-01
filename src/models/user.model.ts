@@ -6,15 +6,14 @@ export interface UserDocument extends Document {
   drivingLicence: string;
   profile: string;
   role: string;
-  provider: string;
-  providerId: string;
-  password: string;
   isAdminExist: boolean;
+  clerkId: string;
 }
 
 
 const userSchema = new Schema<UserDocument>(
   {
+   clerkId: { type: String, unique: true },
    name: {
     type: String,
     required: true
@@ -38,15 +37,6 @@ const userSchema = new Schema<UserDocument>(
     isAdminExist: {
       type: Boolean
     },
-    password: {
-      type: String
-    },
-    provider:{
-      type: String,
-    },
-    providerId: {
-      type: String,
-    }
   },
   {
     timestamps: true,

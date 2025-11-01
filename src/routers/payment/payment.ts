@@ -4,7 +4,7 @@ import { Lease } from "../../models/Lease.model";
 import dotenv from "dotenv";
 import { Car } from "../../models/car.model";
 import { redisClient } from "../../lib/redis/redis";
-import {ClerkExpressRequireAuth} from '@clerk/clerk-sdk-node'
+import {requireAuth} from '@clerk/express'
 import mongoose from "mongoose";
 
 dotenv.config();
@@ -17,10 +17,10 @@ const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
 
 router.post(
   "/create-payment-intent/:id",
-  ClerkExpressRequireAuth() as unknown as express.RequestHandler,
+  requireAuth(),
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?._id;
       const carId = req?.params.id;
       const { startDate, endDate } = req.body;
 
@@ -135,10 +135,10 @@ router.post(
 
 router.post(
   "/create-payment-intent-for-extend-lease/:id",
-  ClerkExpressRequireAuth() as unknown as express.RequestHandler,
+  requireAuth(),
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?._id;
       const leaseId = req.params.id;
       const { additionalDays } = req.body;
 

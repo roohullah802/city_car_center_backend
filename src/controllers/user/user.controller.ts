@@ -111,7 +111,7 @@ export async function getCarDetails(
  * @access  Protected (requires authenticated user)
  */
 export async function getAllCars(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
 
   try {
     const redisKey = `AllCars:AllCars`;
@@ -177,7 +177,7 @@ export async function getPaymentDetails(
   req: Request,
   res: Response
 ): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
 
   if (!userId) {
     res.status(401).json({
@@ -256,7 +256,7 @@ export async function getPaymentDetails(
  */
 export async function returnCar(req: Request, res: Response): Promise<void> {
   const leaseId = req.params.id;
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
 
   if (!leaseId || !userId) {
     res.status(400).json({
@@ -390,7 +390,7 @@ export async function getAllBrands(req: Request, res: Response): Promise<void> {
 
 //  Get lease details by ID, with Redis caching
 export async function leaseDetails(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId as string;
+  const userId = req.user?._id;
   const leaseId = req.params.id as string;
 
   try {
@@ -448,7 +448,7 @@ export async function leaseDetails(req: Request, res: Response): Promise<void> {
 }
 
 export async function getAllFAQs(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
 
   try {
     const redisFaqs = await redisClient.get(`Faqs:AllFAQs`);
@@ -521,7 +521,7 @@ export async function getAllPolicy(req: Request, res: Response): Promise<void> {
  * @access  Private
  */
 export async function reportIssue(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
   const { email, description } = req.body;
 
   try {
@@ -581,7 +581,7 @@ export async function getAllActiveLeases(
   req: Request,
   res: Response
 ): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
 
   if (!userId) {
     res
@@ -643,7 +643,7 @@ export async function getAllActiveLeases(
 
 
 export async function getAllLeases(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
   try {
     const redisLease = await redisClient.get(`leases:${userId}`);
    

@@ -23,11 +23,13 @@ import {
 } from "../../controllers/admin/admin.controller";
 import { compressAndResize, upload } from "../../lib/multer/multer";
 import {requireAuth} from '@clerk/express'
+import { attachUser } from "../../lib/attachUser";
 
 const adminRouter = express.Router();
 
 adminRouter.route("/car-listing").post(
-  requireAuth()
+  requireAuth(),
+  attachUser
   ,
   upload.fields([
     { name: "images", maxCount: 10 },
@@ -38,26 +40,26 @@ adminRouter.route("/car-listing").post(
 );
 adminRouter
   .route("/delete/lease/:id")
-  .post(requireAuth(), deleteLease);
+  .post(requireAuth(), attachUser, deleteLease);
 adminRouter
   .route("/delete/car-listing/:id")
-  .delete(requireAuth(), deleteCarListing);
-adminRouter.route("/set-faqs").post(requireAuth(),setFAQs);
-adminRouter.route("/set-policy").post(requireAuth(),setPrivacypolicy);
-adminRouter.route("/recent-activity").get(requireAuth(),recentActivity);
-adminRouter.route("/totalUsers").get(requireAuth(),totalUsers);
-adminRouter.route("/totalCars").get(requireAuth(),totalCars);
-adminRouter.route("/activeLeases").get(requireAuth(),activeLeases);
-adminRouter.route('/recent-cars').get(requireAuth(), getOneWeekAllCars)
-adminRouter.route('/new-users').get(requireAuth(), getOneWeekUsers)
-adminRouter.route('/active/users').get(requireAuth(), activeUsers)
-adminRouter.route('/all/users').get(requireAuth(), AllUsers)
-adminRouter.route('/delete/user/:id').delete(requireAuth(), deleteUser)
-adminRouter.route('/user/details/:id').get(requireAuth(), userDetails)
-adminRouter.route('/total-cars-for-car-management').get(requireAuth(), totalCarss)
-adminRouter.route('/car-details/:id').get(requireAuth(), carDetails);
-adminRouter.route('/user-complains').get(requireAuth(), userComplains);
-adminRouter.route('/transactions').get(requireAuth(), transactions);
-adminRouter.route('/update-car/:id').patch(requireAuth(), updateCar);
+  .delete(requireAuth(),attachUser, deleteCarListing);
+adminRouter.route("/set-faqs").post(requireAuth(),attachUser,setFAQs);
+adminRouter.route("/set-policy").post(requireAuth(),attachUser,setPrivacypolicy);
+adminRouter.route("/recent-activity").get(requireAuth(),attachUser,recentActivity);
+adminRouter.route("/totalUsers").get(requireAuth(),attachUser,totalUsers);
+adminRouter.route("/totalCars").get(requireAuth(),attachUser,totalCars);
+adminRouter.route("/activeLeases").get(requireAuth(),attachUser,activeLeases);
+adminRouter.route('/recent-cars').get(requireAuth(),attachUser, getOneWeekAllCars)
+adminRouter.route('/new-users').get(requireAuth(),attachUser, getOneWeekUsers)
+adminRouter.route('/active/users').get(requireAuth(),attachUser, activeUsers)
+adminRouter.route('/all/users').get(requireAuth(),attachUser, AllUsers)
+adminRouter.route('/delete/user/:id').delete(requireAuth(),attachUser, deleteUser)
+adminRouter.route('/user/details/:id').get(requireAuth(),attachUser, userDetails)
+adminRouter.route('/total-cars-for-car-management').get(requireAuth(),attachUser, totalCarss)
+adminRouter.route('/car-details/:id').get(requireAuth(),attachUser, carDetails);
+adminRouter.route('/user-complains').get(requireAuth(),attachUser, userComplains);
+adminRouter.route('/transactions').get(requireAuth(),attachUser, transactions);
+adminRouter.route('/update-car/:id').patch(requireAuth(),attachUser, updateCar);
 
 export { adminRouter };

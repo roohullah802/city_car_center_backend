@@ -191,7 +191,7 @@ export async function deleteCarListing(
  * @access Protected (requires authentication)
  */
 export async function setFAQs(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
   const { question, answer } = req.body;
 
   if (!userId) {
@@ -230,7 +230,7 @@ export async function setPrivacypolicy(
   req: Request,
   res: Response
 ): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
   const { title, description } = req.body;
 
   if (!userId) {
@@ -354,7 +354,7 @@ export async function getOneWeekAllCars(
   req: Request,
   res: Response
 ): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
   try {
     if (!userId) {
       res
@@ -385,7 +385,7 @@ export async function getOneWeekUsers(
   req: Request,
   res: Response
 ): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
   try {
     if (!userId) {
       res
@@ -413,7 +413,7 @@ export async function getOneWeekUsers(
 }
 
 export async function activeUsers(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
   try {
     if (!userId) {
       res
@@ -467,7 +467,7 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
 }
 
 export async function deleteUser(req: Request, res: Response): Promise<void> {
-  const userid = req.user?.userId;
+  const userid = req.user?._id;
   const { id } = req.params;
   try {
     if (!userid) {
@@ -509,7 +509,7 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
 }
 
 export async function userDetails(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
   const { id } = req.params;
   try {
     if (!userId) {
@@ -561,7 +561,7 @@ export async function userDetails(req: Request, res: Response): Promise<void> {
 }
 
 export async function totalCarss(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
   try {
     if (!userId) {
       res
@@ -600,7 +600,7 @@ export async function totalCarss(req: Request, res: Response): Promise<void> {
 }
 
 export async function carDetails(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
   const { id } = req.params;
 
   try {
@@ -655,7 +655,7 @@ export async function userComplains(
   req: Request,
   res: Response
 ): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
   try {
     if (!userId) {
       res.status(401).json({
@@ -693,7 +693,7 @@ export async function userComplains(
 }
 
 export async function transactions(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
   try {
     if (!userId) {
       res.status(401).json({
@@ -724,7 +724,7 @@ export async function transactions(req: Request, res: Response): Promise<void> {
 }
 
 export async function updateCar(req: Request, res: Response): Promise<void> {
-  const userId = req.user?.userId;
+  const userId = req.user?._id;
   const {id} = req.params;
   try {
     
