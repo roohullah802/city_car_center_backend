@@ -1,6 +1,7 @@
+import dotenv from "dotenv";
+dotenv.config();
 import express, { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
-import dotenv from "dotenv";
 import { connectDB } from "./src/db/mongodb";
 import cors from "cors";
 import bodyParser from "body-parser";
@@ -24,7 +25,6 @@ import {startCronJob} from './src/lib/node_cron/node.cron';
 import { formatDate } from "./src/lib/formatDate";
 import { clerkMiddleware } from "@clerk/express";
 
-dotenv.config();
 connectRedis();
 
 const app = express();
