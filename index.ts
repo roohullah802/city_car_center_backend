@@ -22,7 +22,7 @@ import http from "http";
 import { AdminActivity } from "./src/models/adminActivity";
 import {startCronJob} from './src/lib/node_cron/node.cron';
 import { formatDate } from "./src/lib/formatDate";
-import { ClerkExpressRequireAuth } from "@clerk/clerk-sdk-node";
+import { clerkMiddleware } from "@clerk/express";
 
 dotenv.config();
 connectRedis();
@@ -193,7 +193,7 @@ app.use("/api/user", userRouter);
 app.use("/api/v1/secure/route/admin", adminRouter);
 app.use("/api/payment", paymentRoutes);
 
-app.use(ClerkExpressRequireAuth() as unknown as express.RequestHandler);
+app.use(clerkMiddleware());
 
 const PORT = process.env.PORT || 5000;
 
