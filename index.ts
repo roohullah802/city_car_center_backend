@@ -240,8 +240,6 @@ app.post(
   }
 );
 
-console.log("seckey ==> ", process.env.CLERK_SECRET_KEY);
-console.log("pubkey ==> ", process.env.CLERK_PUBLISHABLE_KEY);
 
 app.use(cors(corsOptions));
 app.use(cookieParser());
