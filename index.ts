@@ -22,6 +22,7 @@ import http from "http";
 import { AdminActivity } from "./src/models/adminActivity";
 import {startCronJob} from './src/lib/node_cron/node.cron';
 import { formatDate } from "./src/lib/formatDate";
+import { ClerkExpressRequireAuth } from "@clerk/clerk-sdk-node";
 
 dotenv.config();
 connectRedis();
@@ -181,6 +182,7 @@ app.post(
   }
 );
 
+app.use(ClerkExpressRequireAuth() as unknown as express.RequestHandler);
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());
