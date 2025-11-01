@@ -47,6 +47,10 @@ adminRouter
 adminRouter.route("/set-faqs").post(requireAuth(),attachUser,setFAQs);
 adminRouter.route("/set-policy").post(requireAuth(),attachUser,setPrivacypolicy);
 adminRouter.route("/recent-activity").get(requireAuth(),attachUser,recentActivity);
+adminRouter.get("/totalUserss", (req, res) => {
+  res.json({ message: "Route works!" });
+});
+
 adminRouter.route("/totalUsers").get(requireAuth(),attachUser,totalUsers);
 adminRouter.route("/totalCars").get(requireAuth(),attachUser,totalCars);
 adminRouter.route("/activeLeases").get(requireAuth(),attachUser,activeLeases);
