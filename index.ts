@@ -21,9 +21,10 @@ import { Car } from "./src/models/car.model";
 import { Server } from "socket.io";
 import http from "http";
 import { AdminActivity } from "./src/models/adminActivity";
-import {startCronJob} from './src/lib/node_cron/node.cron';
+import { startCronJob } from "./src/lib/node_cron/node.cron";
 import { formatDate } from "./src/lib/formatDate";
 import { clerkMiddleware } from "@clerk/express";
+import { User } from "./src/models/user.model";
 
 connectRedis();
 
@@ -47,16 +48,41 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 const corsOptions = {
   origin: [
-    // "http://localhost:5173", 
+    "http://localhost:5173",
     "https://admin.citycarcenters.com",
   ],
-  credentials: true, 
+  credentials: true,
 };
-
-
 
 const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
   apiVersion: "2025-05-28.basil",
+});
+
+app.post("/clerk-webhook", bodyParser.json(), async (req, res) => {
+  const event = req.body;
+
+  if (event.type === "user.created") {
+    const clerkUser = event.data;
+
+    try {
+      const newUser = new User({
+        clerkId: clerkUser.id,
+        email: clerkUser.emailAddresses[0]?.emailAddress,
+        profile: clerkUser.profileImageUrl || "",
+        name: clerkUser.fullName || "",
+      });
+
+      await newUser.save();
+
+      console.log("User created in MongoDB:", newUser.email);
+      res.status(200).json({ message: "User saved in MongoDB" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Error saving user" });
+    }
+  } else {
+    res.status(200).json({ message: "Event ignored" });
+  }
 });
 
 // Webhook route
@@ -104,7 +130,7 @@ app.post(
 
           // Update Redis cache
           await redisClient.del(`carDetails:${carId}`);
-          await redisClient.del('AllCars:AllCars');
+          await redisClient.del("AllCars:AllCars");
           await redisClient.del(`leases:${userId}`);
           await redisClient.del(`leasePaymentHistory:${userId}`);
 
@@ -123,7 +149,9 @@ app.post(
             user: userId,
             lease: lease._id,
             car: carId,
-            description: `User ${userId} booked car ${carId}  from ${formatDate(startDate.toString())} to ${formatDate(endDate.toString())}`,
+            description: `User ${userId} booked car ${carId}  from ${formatDate(
+              startDate.toString()
+            )} to ${formatDate(endDate.toString())}`,
           });
         }
 
@@ -131,7 +159,7 @@ app.post(
           // Extend lease
           const lease = await Lease.findByIdAndUpdate(
             leaseId,
-            { endDate: new Date(endDate), status: 'active' },
+            { endDate: new Date(endDate), status: "active" },
             { new: true }
           );
 
@@ -157,7 +185,9 @@ app.post(
               user: userId,
               lease: lease._id,
               car: carId,
-              description: `User ${email} extended lease ${leaseId} until ${formatDate(endDate)}`,
+              description: `User ${email} extended lease ${leaseId} until ${formatDate(
+                endDate
+              )}`,
             });
           }
         }
@@ -182,22 +212,19 @@ app.post(
   }
 );
 
-console.log('seckey ==> ', process.env.CLERK_SECRET_KEY);
-console.log('pubkey ==> ', process.env.CLERK_PUBLISHABLE_KEY);
-
+console.log("seckey ==> ", process.env.CLERK_SECRET_KEY);
+console.log("pubkey ==> ", process.env.CLERK_PUBLISHABLE_KEY);
 
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(clerkMiddleware({secretKey: process.env.CLERK_SECRET_KEY}));
+app.use(clerkMiddleware({ secretKey: process.env.CLERK_SECRET_KEY }));
 app.use("/api/user/auth", userAuthRouter);
 app.use("/api/user", userRouter);
 app.use("/api/v1/secure/route/admin", adminRouter);
 app.use("/api/payment", paymentRoutes);
-
-
 
 const PORT = process.env.PORT || 5000;
 
