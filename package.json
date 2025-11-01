@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@clerk/clerk-sdk-node": "^4.13.23",
     "@types/cookie-parser": "^1.4.9",
     "axios": "^1.11.0",
     "bcryptjs": "^3.0.2",

@@ -4,10 +4,9 @@ import { Lease } from "../../models/Lease.model";
 import dotenv from "dotenv";
 import { Car } from "../../models/car.model";
 import { redisClient } from "../../lib/redis/redis";
-import { emailQueue } from "../../lib/mail/emailQueues";
-import { authMiddleware } from "../../middleware/auth.middleware";
+import {ClerkExpressRequireAuth} from '@clerk/clerk-sdk-node'
 import mongoose from "mongoose";
-import { log } from "console";
+
 dotenv.config();
 
 const router = express.Router();
@@ -15,10 +14,10 @@ const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
   apiVersion: "2025-05-28.basil",
 });
 
-// ✅ Create a Payment Intent
+
 router.post(
   "/create-payment-intent/:id",
-  authMiddleware,
+  ClerkExpressRequireAuth() as unknown as express.RequestHandler,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = req.user?.userId;
@@ -136,7 +135,7 @@ router.post(
 
 router.post(
   "/create-payment-intent-for-extend-lease/:id",
-  authMiddleware,
+  ClerkExpressRequireAuth() as unknown as express.RequestHandler,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = req.user?.userId;
