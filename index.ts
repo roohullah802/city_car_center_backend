@@ -71,7 +71,7 @@ app.post(
     const headers = req.headers;
 
     
-    const wh = new Webhook(CLERK_WEBHOOK_SECRETT!);
+    const wh = new Webhook(CLERK_WEBHOOK_SECRETT);
     let event: { type: string; data: any };
 
 
