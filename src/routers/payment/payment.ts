@@ -6,6 +6,7 @@ import { Car } from "../../models/car.model";
 import { redisClient } from "../../lib/redis/redis";
 import { attachUser } from "../../lib/attachUser";
 import mongoose from "mongoose";
+import {requireAuth} from '@clerk/express'
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
 
 router.post(
   "/create-payment-intent/:id",
+  requireAuth(),
   attachUser,
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -135,6 +137,7 @@ router.post(
 
 router.post(
   "/create-payment-intent-for-extend-lease/:id",
+  requireAuth(),
   attachUser,
   async (req: Request, res: Response): Promise<void> => {
     try {
