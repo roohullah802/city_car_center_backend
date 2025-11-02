@@ -53,6 +53,7 @@ const corsOptions = {
     "https://admin.citycarcenters.com",
   ],
   credentials: true,
+  allowedHeaders: ["Authorization", "Content-Type"]
 };
 
 const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
