@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import { User, UserDocument } from "../models/user.model";
+import { getAuth } from "@clerk/express";
 
 
 export const asyncHandler = (fn: RequestHandler) => 
@@ -9,14 +10,14 @@ export const asyncHandler = (fn: RequestHandler) =>
 
 
 const attachUserFn: RequestHandler = async (req, res, next) => {
-  const clerkId = req.auth?.userId;
+  const { userId } = getAuth(req);
 
-  if (!clerkId) {
+  if (!userId) {
     res.status(401).json({ message: "Not authenticated" });
     return;
   }
 
-  const user = await User.findOne({ clerkId });
+  const user = await User.findOne({ clerkId: userId });
   if (!user) {
     res.status(404).json({ message: "User not found in DB" });
     return;

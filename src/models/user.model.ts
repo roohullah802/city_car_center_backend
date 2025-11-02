@@ -34,6 +34,10 @@ const userSchema = new Schema<UserDocument>(
       enum: ['user', 'admin'],
       default: 'user'
     },
+    isAdminExist: {
+      type: Boolean,
+      default: false
+    },
   },
   {
     timestamps: true,

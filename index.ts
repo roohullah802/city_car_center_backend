@@ -2,7 +2,6 @@ import dotenv from "dotenv";
 dotenv.config();
 import express, { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
-import { connectDB } from "./src/db/mongodb";
 import cors from "cors";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
@@ -23,7 +22,7 @@ import http from "http";
 import { AdminActivity } from "./src/models/adminActivity";
 import { startCronJob } from "./src/lib/node_cron/node.cron";
 import { formatDate } from "./src/lib/formatDate";
-import { clerkMiddleware } from "@clerk/express";
+import { clerkMiddleware, requireAuth } from "@clerk/express";
 import { User } from "./src/models/user.model";
 import { Webhook } from "svix";
 
@@ -56,6 +55,12 @@ const corsOptions = {
   allowedHeaders: ["Authorization", "Content-Type"]
 };
 
+app.use(cors(corsOptions));
+app.use(cookieParser());
+app.use(express.json());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
 const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
   apiVersion: "2025-05-28.basil",
 });
@@ -67,7 +72,9 @@ if (!CLERK_WEBHOOK_SECRETT) {
 }
 
 app.post(
-  "/clerk-webhook",bodyParser.raw({ type: "application/json" }),async (req: Request, res: Response): Promise<void> => {
+  "/clerk-webhook",
+  bodyParser.raw({ type: "application/json" }),
+  async (req: Request, res: Response): Promise<void> => {
     const payload = req.body;
     const headers = req.headers;
 
@@ -242,18 +249,13 @@ app.post(
 );
 
 
-app.use(cors(corsOptions));
-app.use(cookieParser());
-app.use(express.json());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(clerkMiddleware({ secretKey: process.env.CLERK_SECRET_KEY }));
+app.use(clerkMiddleware({secretKey: process.env.CLERK_SECRET_KEY}));
 app.use("/api/user/auth", userAuthRouter);
 app.use("/api/user", userRouter);
 app.use("/api/v1/secure/route/admin", adminRouter);
 app.use("/api/payment", paymentRoutes);
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
 async function init() {
   try {
@@ -290,10 +292,9 @@ mongoose
     {}
   )
   .then(() => {
-    connectDB();
     console.log("MongoDB connected");
     startCronJob();
-    serverr.listen(5000, "0.0.0.0", () =>
+    serverr.listen(PORT, "0.0.0.0", () =>
       console.log(`Server running on port ${PORT}`)
     );
   })

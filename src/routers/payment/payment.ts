@@ -4,7 +4,7 @@ import { Lease } from "../../models/Lease.model";
 import dotenv from "dotenv";
 import { Car } from "../../models/car.model";
 import { redisClient } from "../../lib/redis/redis";
-import {requireAuth} from '@clerk/express'
+import { attachUser } from "../../lib/attachUser";
 import mongoose from "mongoose";
 
 dotenv.config();
@@ -17,7 +17,7 @@ const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
 
 router.post(
   "/create-payment-intent/:id",
-  requireAuth(),
+  attachUser,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = req.user?._id;
@@ -82,7 +82,7 @@ router.post(
 
       const existingLease = await Lease.findOne({
         car: new mongoose.Types.ObjectId(carId),
-        status: "completed",
+        status: "active",
         $or: [
           {
             startDate: { $lte: new Date(endDate) },
@@ -135,7 +135,7 @@ router.post(
 
 router.post(
   "/create-payment-intent-for-extend-lease/:id",
-  requireAuth(),
+  attachUser,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = req.user?._id;
