@@ -770,3 +770,46 @@ export async function updateCar(req: Request, res: Response): Promise<void> {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
+
+
+export const getPendingAdminUsers = async (req: Request, res: Response) => {
+  try {
+    const users = await User.find({ source: "admin", status: "pending" });
+    res.status(200).json({ success: true, users });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
+/**
+ * Returns the current user's email, _id, role, and status
+ */
+export const getAdminStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = (req as any).user;
+
+    if (!user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { _id } = user;
+
+    const dbUser = await User.findById(_id);
+
+    if (!dbUser) {
+      res.status(401).json({success: false, message:"user not found"})
+      return
+    }
+
+    res.status(200).json({
+      success: true,
+      user: { _id: dbUser._id, email: dbUser.email , role: dbUser.role, status: dbUser.status },
+    });
+  } catch (error: any) {
+    console.error("Error fetching user status:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};

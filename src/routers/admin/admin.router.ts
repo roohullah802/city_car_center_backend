@@ -20,6 +20,8 @@ import {
   userComplains,
   transactions,
   updateCar,
+  getPendingAdminUsers,
+  getAdminStatus
 } from "../../controllers/admin/admin.controller";
 import { compressAndResize, upload } from "../../lib/multer/multer";
 import { verifyClerkToken } from "../../middleware/verifyClerkToken";
@@ -60,5 +62,7 @@ adminRouter.route("/car-details/:id").get(verifyClerkToken,requireAdmin, carDeta
 adminRouter.route("/user-complains").get(verifyClerkToken,requireAdmin, userComplains);
 adminRouter.route("/transactions").get(verifyClerkToken,requireAdmin, transactions);
 adminRouter.route("/update-car/:id").patch(verifyClerkToken,requireAdmin, updateCar);
+adminRouter.route('/get-pending-admin-users').get(verifyClerkToken, requireAdmin, getPendingAdminUsers);
+adminRouter.route('/status').get(verifyClerkToken, getAdminStatus);
 
 export { adminRouter };
