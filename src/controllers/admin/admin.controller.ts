@@ -519,7 +519,7 @@ export async function userDetails(req: Request, res: Response): Promise<void> {
         .json({ success: false, message: "Unauthorized please login first" });
       return;
     }
-
+    console.log(id);
     const userDetailss = await User.findById(id);
 
     if (!userDetailss) {

@@ -47,10 +47,6 @@ adminRouter
 adminRouter.route("/set-faqs").post(verifyClerkToken, setFAQs);
 adminRouter.route("/set-policy").post(verifyClerkToken, setPrivacypolicy);
 adminRouter.route("/recent-activity").get(verifyClerkToken, recentActivity);
-adminRouter.get("/totalUserss",verifyClerkToken, (req, res) => {
-  res.json({ message: "Route works!" });
-});
-
 adminRouter.route("/totalUsers").get(verifyClerkToken, totalUsers);
 adminRouter.route("/totalCars").get(verifyClerkToken, totalCars);
 adminRouter.route("/activeLeases").get(verifyClerkToken, activeLeases);
