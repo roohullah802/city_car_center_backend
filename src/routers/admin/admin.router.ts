@@ -43,27 +43,27 @@ adminRouter
   .post(verifyClerkToken, deleteLease);
 adminRouter
   .route("/delete/car-listing/:id")
-  .delete(requireAuth(),attachUser, deleteCarListing);
-adminRouter.route("/set-faqs").post(requireAuth(),attachUser, setFAQs);
-adminRouter.route("/set-policy").post(requireAuth(),attachUser, setPrivacypolicy);
-adminRouter.route("/recent-activity").get(requireAuth(),attachUser, recentActivity);
+  .delete(verifyClerkToken, deleteCarListing);
+adminRouter.route("/set-faqs").post(verifyClerkToken, setFAQs);
+adminRouter.route("/set-policy").post(verifyClerkToken, setPrivacypolicy);
+adminRouter.route("/recent-activity").get(verifyClerkToken, recentActivity);
 adminRouter.get("/totalUserss",verifyClerkToken, (req, res) => {
   res.json({ message: "Route works!" });
 });
 
-adminRouter.route("/totalUsers").get(requireAuth(),attachUser, totalUsers);
-adminRouter.route("/totalCars").get(requireAuth(),attachUser, totalCars);
-adminRouter.route("/activeLeases").get(requireAuth(),attachUser, activeLeases);
-adminRouter.route('/recent-cars').get(requireAuth(),attachUser, getOneWeekAllCars)
-adminRouter.route('/new-users').get(requireAuth(),attachUser, getOneWeekUsers)
-adminRouter.route('/active/users').get(requireAuth(),attachUser, activeUsers)
-adminRouter.route('/all/users').get(requireAuth(),attachUser, AllUsers)
-adminRouter.route('/delete/user/:id').delete(requireAuth(),attachUser, deleteUser)
-adminRouter.route('/user/details/:id').get(requireAuth(),attachUser, userDetails)
-adminRouter.route('/total-cars-for-car-management').get(requireAuth(),attachUser, totalCarss)
-adminRouter.route('/car-details/:id').get(requireAuth(),attachUser, carDetails);
-adminRouter.route('/user-complains').get(requireAuth(),attachUser, userComplains);
-adminRouter.route('/transactions').get(requireAuth(),attachUser, transactions);
-adminRouter.route('/update-car/:id').patch(requireAuth(),attachUser, updateCar);
+adminRouter.route("/totalUsers").get(verifyClerkToken, totalUsers);
+adminRouter.route("/totalCars").get(verifyClerkToken, totalCars);
+adminRouter.route("/activeLeases").get(verifyClerkToken, activeLeases);
+adminRouter.route('/recent-cars').get(verifyClerkToken, getOneWeekAllCars)
+adminRouter.route('/new-users').get(verifyClerkToken, getOneWeekUsers)
+adminRouter.route('/active/users').get(verifyClerkToken, activeUsers)
+adminRouter.route('/all/users').get(verifyClerkToken, AllUsers)
+adminRouter.route('/delete/user/:id').delete(verifyClerkToken, deleteUser)
+adminRouter.route('/user/details/:id').get(verifyClerkToken, userDetails)
+adminRouter.route('/total-cars-for-car-management').get(verifyClerkToken, totalCarss)
+adminRouter.route('/car-details/:id').get(verifyClerkToken, carDetails);
+adminRouter.route('/user-complains').get(verifyClerkToken, userComplains);
+adminRouter.route('/transactions').get(verifyClerkToken, transactions);
+adminRouter.route('/update-car/:id').patch(verifyClerkToken, updateCar);
 
 export { adminRouter };
