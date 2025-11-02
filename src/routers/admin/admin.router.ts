@@ -24,6 +24,7 @@ import {
 import { compressAndResize, upload } from "../../lib/multer/multer";
 import { attachUser } from "../../lib/attachUser";
 import {requireAuth} from '@clerk/express'
+import { verifyClerkToken } from "../../lib/verifyClerkToken";
 
 const adminRouter = express.Router();
 
@@ -39,14 +40,14 @@ adminRouter.route("/car-listing").post(
 );
 adminRouter
   .route("/delete/lease/:id")
-  .post(requireAuth(),attachUser, deleteLease);
+  .post(verifyClerkToken, deleteLease);
 adminRouter
   .route("/delete/car-listing/:id")
   .delete(requireAuth(),attachUser, deleteCarListing);
 adminRouter.route("/set-faqs").post(requireAuth(),attachUser, setFAQs);
 adminRouter.route("/set-policy").post(requireAuth(),attachUser, setPrivacypolicy);
 adminRouter.route("/recent-activity").get(requireAuth(),attachUser, recentActivity);
-adminRouter.get("/totalUserss",requireAuth(), (req, res) => {
+adminRouter.get("/totalUserss",verifyClerkToken, (req, res) => {
   res.json({ message: "Route works!" });
 });
 
