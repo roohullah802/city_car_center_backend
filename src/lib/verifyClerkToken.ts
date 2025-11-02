@@ -25,7 +25,7 @@ export const verifyClerkToken = async (
 
     const token = authHeader.split(" ")[1].trim();
 
-    // ✅ Verify token signature & claims
+   
     const payload = await verifyToken(token, {
       secretKey: process.env.CLERK_SECRET_KEY!,
     });
@@ -35,16 +35,16 @@ export const verifyClerkToken = async (
       return;
     }
 
-    // ✅ Optionally fetch the full user (optional optimization)
+ 
     const user = await clerkClient.users.getUser(payload.sub);
 
-    // Attach user to request for later use
+
     (req as any).user = user;
     (req as any).auth = { userId: user.id };
 
     return next();
   } catch (error: any) {
-    console.error("❌ Clerk token verification failed:", {
+    console.error("Clerk token verification failed:", {
       message: error.message,
       stack: error.stack,
     });

@@ -557,6 +557,8 @@ export async function userDetails(req: Request, res: Response): Promise<void> {
       completedLeases,
     });
   } catch (error) {
+    console.log(error);
+    
     res.status(500).json({ success: false, message: "internal server error" });
   }
 }
