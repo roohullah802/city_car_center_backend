@@ -4,9 +4,9 @@ import { Lease } from "../../models/Lease.model";
 import dotenv from "dotenv";
 import { Car } from "../../models/car.model";
 import { redisClient } from "../../lib/redis/redis";
-import { attachUser } from "../../lib/attachUser";
 import mongoose from "mongoose";
-import {requireAuth} from '@clerk/express'
+import { verifyClerkToken } from "../../middleware/verifyClerkToken";
+import { requireAdmin } from "../../middleware/requireAmin";
 
 dotenv.config();
 
@@ -15,11 +15,10 @@ const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
   apiVersion: "2025-05-28.basil",
 });
 
-
 router.post(
   "/create-payment-intent/:id",
-  requireAuth(),
-  attachUser,
+  verifyClerkToken,
+  requireAdmin,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = req.user?._id;
@@ -56,7 +55,7 @@ router.post(
         }
       }
       console.log(car.available);
-      
+
       if (!car.available) {
         res.status(400).json({
           success: false,
@@ -129,7 +128,7 @@ router.post(
       });
     } catch (error: any) {
       console.log(error);
-      
+
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -137,8 +136,8 @@ router.post(
 
 router.post(
   "/create-payment-intent-for-extend-lease/:id",
-  requireAuth(),
-  attachUser,
+  verifyClerkToken,
+  requireAdmin,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = req.user?._id;
@@ -215,10 +214,12 @@ router.post(
     } catch (error: any) {
       res
         .status(400)
-        .json({ success: false, message: error.message || "Something went wrong" });
+        .json({
+          success: false,
+          message: error.message || "Something went wrong",
+        });
     }
   }
 );
-
 
 export default router;
