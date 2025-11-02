@@ -47,13 +47,17 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 const corsOptions = {
-  origin: [
-    "http://localhost:5173",
-    "https://admin.citycarcenters.com",
-  ],
+  origin: ["http://localhost:5173", "https://admin.citycarcenters.com"],
   credentials: true,
-  allowedHeaders: ["Authorization", "Content-Type"]
+  allowedHeaders: ["Authorization", "Content-Type"],
 };
+
+app.use(
+  clerkMiddleware({
+    secretKey: process.env.CLERK_SECRET_KEY,
+    publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
+  })
+);
 
 app.use(cors(corsOptions));
 app.use(cookieParser());
@@ -65,10 +69,9 @@ const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
   apiVersion: "2025-05-28.basil",
 });
 
-
 const CLERK_WEBHOOK_SECRETT = process.env.CLERK_WEBHOOK_SECRET;
 if (!CLERK_WEBHOOK_SECRETT) {
-   throw new Error("Missing CLERK_WEBHOOK_SECRET in .env");
+  throw new Error("Missing CLERK_WEBHOOK_SECRET in .env");
 }
 
 app.post(
@@ -78,27 +81,21 @@ app.post(
     const payload = req.body;
     const headers = req.headers;
 
-    
     const wh = new Webhook(CLERK_WEBHOOK_SECRETT);
     let event: { type: string; data: any };
 
-
     try {
-      event = wh.verify(
-        payload,
-        {
-          "webhook-id": headers["webhook-id"] as string,
-          "webhook-timestamp": headers["webhook-timestamp"] as string,
-          "webhook-signature": headers["webhook-signature"] as string,
-        }
-      ) as { type: string; data: any };
+      event = wh.verify(payload, {
+        "webhook-id": headers["webhook-id"] as string,
+        "webhook-timestamp": headers["webhook-timestamp"] as string,
+        "webhook-signature": headers["webhook-signature"] as string,
+      }) as { type: string; data: any };
     } catch (err) {
       console.error("Webhook verification failed:", err);
       res.status(400).json({ error: "Invalid webhook signature" });
       return;
     }
 
-    
     if (event.type === "user.created") {
       const clerkUser = event.data;
 
@@ -106,7 +103,9 @@ app.post(
         const newUser = new User({
           clerkId: clerkUser.id,
           email: clerkUser.email_addresses[0]?.email_address,
-          name: `${clerkUser.first_name || ""} ${clerkUser.last_name || ""}`.trim(),
+          name: `${clerkUser.first_name || ""} ${
+            clerkUser.last_name || ""
+          }`.trim(),
           profile: clerkUser.image_url || "",
         });
 
@@ -248,8 +247,6 @@ app.post(
   }
 );
 
-
-app.use(clerkMiddleware({secretKey: process.env.CLERK_SECRET_KEY}));
 app.use("/api/user/auth", userAuthRouter);
 app.use("/api/user", userRouter);
 app.use("/api/v1/secure/route/admin", adminRouter);
@@ -283,7 +280,7 @@ async function init() {
     console.error("❌ Failed to schedule lease reminder job:", err);
   }
 }
- 
+
 init();
 
 mongoose
