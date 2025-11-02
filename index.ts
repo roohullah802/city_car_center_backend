@@ -107,6 +107,7 @@ app.post(
             clerkUser.last_name || ""
           }`.trim(),
           profile: clerkUser.image_url || "",
+          source: 'admin'
         });
 
         await newUser.save();
