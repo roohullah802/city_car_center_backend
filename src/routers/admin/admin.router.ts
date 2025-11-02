@@ -46,7 +46,7 @@ adminRouter
 adminRouter.route("/set-faqs").post(requireAuth(),attachUser, setFAQs);
 adminRouter.route("/set-policy").post(requireAuth(),attachUser, setPrivacypolicy);
 adminRouter.route("/recent-activity").get(requireAuth(),attachUser, recentActivity);
-adminRouter.get("/totalUserss", (req, res) => {
+adminRouter.get("/totalUserss",requireAuth(), (req, res) => {
   res.json({ message: "Route works!" });
 });
 
