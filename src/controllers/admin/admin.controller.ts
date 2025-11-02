@@ -510,7 +510,7 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
 }
 
 export async function userDetails(req: Request, res: Response): Promise<void> {
-  const userId = req.user?._id;
+  const userId = req.user?._id
   const { id } = req.params;
   try {
     if (!userId) {
