@@ -51,6 +51,74 @@ const corsOptions = {
   allowedHeaders: ["Authorization", "Content-Type"],
 };
 
+app.post(
+  "/clerk-webhook",
+  express.raw({ type: "application/json" }),
+  async (req: Request, res: Response):Promise<void> => {
+    const payload = req.body;
+    const headers = req.headers;
+    const CLERK_WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET!;
+
+    const wh = new Webhook(CLERK_WEBHOOK_SECRET);
+
+    // Tell TypeScript the type of the event
+    type ClerkUserCreatedEvent = {
+      type: "user.created";
+      data: any;
+    };
+
+    let event: ClerkUserCreatedEvent;
+
+    try {
+      event = wh.verify(payload, {
+        "webhook-id": headers["webhook-id"] as string,
+        "webhook-timestamp": headers["webhook-timestamp"] as string,
+        "webhook-signature": headers["webhook-signature"] as string,
+      }) as ClerkUserCreatedEvent; // <-- cast to proper type
+    } catch (err) {
+      console.error("❌ Webhook verification failed:", err);
+      res.status(400).json({ error: "Invalid webhook signature" });
+      return
+    }
+
+    if (event.type === "user.created") {
+      const clerkUser = event.data;
+
+    
+      let email = clerkUser.email_addresses?.[0]?.email_address || "";
+      let firstName = clerkUser.first_name || "";
+      let lastName = clerkUser.last_name || "";
+      let profile = clerkUser.image_url || "";
+
+      if (clerkUser.external_accounts?.length) {
+        const ext = clerkUser.external_accounts[0];
+        email = ext.email_address || email;
+        firstName = ext.first_name || firstName;
+        lastName = ext.last_name || lastName;
+        profile = ext.avatar_url || profile;
+      }
+
+      try {
+        const newUser = new User({
+          clerkId: clerkUser.id,
+          email,
+          name: `${firstName} ${lastName}`.trim(),
+          profile,
+          source: "clerk",
+        });
+
+        await newUser.save();
+        console.log("✅ New user saved:", newUser.email);
+      } catch (err) {
+        console.error("❌ MongoDB save failed:", err);
+      }
+    }
+
+    res.status(200).json({ message: "Webhook processed" });
+  }
+);
+
+
 
 app.use(cors(corsOptions));
 app.use(cookieParser());
@@ -62,57 +130,7 @@ const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
   apiVersion: "2025-05-28.basil",
 });
 
-app.post(
-  "/clerk-webhook",
-  bodyParser.raw({ type: "application/json" }),
-  async (req: Request, res: Response): Promise<void> => {
-    const payload = req.body;
-    const headers = req.headers;
 
-    const CLERK_WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET!;
-
-    const wh = new Webhook(CLERK_WEBHOOK_SECRET);
-
-    let event: { type: string; data: any };
-
-    try {
-      event = wh.verify(payload, {
-        "webhook-id": headers["webhook-id"] as string,
-        "webhook-timestamp": headers["webhook-timestamp"] as string,
-        "webhook-signature": headers["webhook-signature"] as string,
-      }) as { type: string; data: any };
-    } catch (err) {
-      console.error("Webhook verification failed:", err);
-      res.status(400).json({ error: "Invalid webhook signature" });
-      return;
-    }
-
-  
-    if (event.type === "user.created") {
-      const clerkUser = event.data;
-
-      try {
-        const newUser = new User({
-          clerkId: clerkUser.id,
-          email: clerkUser.email_addresses[0]?.email_address || "",
-          name: `${clerkUser.first_name || ""} ${
-            clerkUser.last_name || ""
-          }`.trim(),
-          profile: clerkUser.image_url || "",
-          source: "clerk",
-        });
-
-        await newUser.save();
-        console.log("New user saved:", newUser.email);
-      } catch (err) {
-        console.error("MongoDB save failed:", err);
-      }
-    }
-
-    res.status(200).json({ message: "Webhook processed" });
-    return;
-  }
-);
 
 // Webhook route
 app.post(
