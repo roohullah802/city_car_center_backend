@@ -53,36 +53,37 @@ const corsOptions = {
 
 
 
+
 app.post(
   "/clerk-webhook",
   express.raw({ type: "application/json" }),
   async (req, res): Promise<void> => {
     const CLERK_WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
     if (!CLERK_WEBHOOK_SECRET) {
-      console.error("Missing CLERK_WEBHOOK_SECRET in env");
+      console.error("Missing CLERK_WEBHOOK_SECRET in environment");
       res.status(500).json({ error: "Server misconfiguration" });
       return;
     }
 
     const wh = new Webhook(CLERK_WEBHOOK_SECRET);
-
     let event: any;
 
- 
+
     if (
       !req.headers["svix-id"] ||
       !req.headers["svix-timestamp"] ||
       !req.headers["svix-signature"]
     ) {
-      console.warn("⚠️ No svix headers found — skipping signature verification (manual test)");
+      console.warn("No svix headers found — skipping signature verification (manual test)");
       try {
         event = JSON.parse(req.body.toString());
       } catch (err) {
+        console.error("Invalid JSON in manual test:", err);
         res.status(400).json({ error: "Invalid JSON in manual test" });
         return;
       }
     } else {
-    
+   
       try {
         event = wh.verify(req.body, {
           "svix-id": req.headers["svix-id"] as string,
@@ -96,13 +97,12 @@ app.post(
       }
     }
 
-    console.log("Event received:", event.type);
+    console.log("Clerk event received:", event.type);
 
- 
+    // 🔹 USER CREATED
     if (event.type === "user.created") {
       const clerkUser = event.data;
-      const email =
-        clerkUser.email_addresses?.[0]?.email_address || "";
+      const email = clerkUser.email_addresses?.[0]?.email_address || "";
       const firstName =
         clerkUser.first_name ||
         clerkUser.external_accounts?.[0]?.first_name ||
@@ -128,18 +128,35 @@ app.post(
             source: "clerk",
           });
           await newUser.save();
-          console.log("User created:", newUser.email);
+          console.log("User created in MongoDB:", newUser.email);
         } else {
           console.log("ℹUser already exists:", existingUser.email);
         }
       } catch (err) {
-        console.error(" MongoDB save failed:", err);
+        console.error("MongoDB save failed:", err);
       }
     }
 
-    res.status(200).json({ message: "Webhook processed" });
+    // 🔹 USER DELETED
+    if (event.type === "user.deleted") {
+      const clerkUser = event.data;
+      try {
+        const deleted = await User.findOneAndDelete({ clerkId: clerkUser.id });
+        if (deleted) {
+          console.log("User deleted from MongoDB:", deleted.email);
+        } else {
+          console.log("No matching user found for deletion:", clerkUser.id);
+        }
+      } catch (err) {
+        console.error("MongoDB delete failed:", err);
+      }
+    }
+
+    res.status(200).json({ message: "Webhook processed successfully" });
   }
 );
+
+
 
 
 
