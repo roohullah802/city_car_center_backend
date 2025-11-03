@@ -11,6 +11,7 @@ import { User } from "../../models/user.model";
 import path from "path";
 import { IssueReport } from "../../models/report.model";
 import { createUpdateCarSchema } from "../../lib/zod/zod.update.car";
+import { resolveSoa } from "dns";
 
 
 export async function carListing(req: Request, res: Response): Promise<void> {
@@ -774,6 +775,11 @@ export async function updateCar(req: Request, res: Response): Promise<void> {
 
 export const getPendingAdminUsers = async (req: Request, res: Response) => {
   try {
+    const userId = req.user?._id
+    if (!userId) {
+      res.status(401).json({success: false, message:"Unautorized please login first to access this route"})
+      return
+    }
     const users = await User.find({ source: "admin", status: "pending" });
     res.status(200).json({ success: true, users });
   } catch (error: any) {
