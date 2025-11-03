@@ -125,7 +125,7 @@ app.post(
             email,
             name,
             profile,
-            source: "clerk",
+            source: "admin",
           });
           await newUser.save();
           console.log("User created in MongoDB:", newUser.email);
