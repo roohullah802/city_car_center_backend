@@ -22,7 +22,6 @@ import http from "http";
 import { AdminActivity } from "./src/models/adminActivity";
 import { startCronJob } from "./src/lib/node_cron/node.cron";
 import { formatDate } from "./src/lib/formatDate";
-import { clerkMiddleware, requireAuth } from "@clerk/express";
 import { User } from "./src/models/user.model";
 import { Webhook } from "svix";
 
@@ -52,12 +51,6 @@ const corsOptions = {
   allowedHeaders: ["Authorization", "Content-Type"],
 };
 
-app.use(
-  clerkMiddleware({
-    secretKey: process.env.CLERK_SECRET_KEY,
-    publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
-  })
-);
 
 app.use(cors(corsOptions));
 app.use(cookieParser());
@@ -69,11 +62,6 @@ const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
   apiVersion: "2025-05-28.basil",
 });
 
-const CLERK_WEBHOOK_SECRETT = process.env.CLERK_WEBHOOK_SECRET;
-if (!CLERK_WEBHOOK_SECRETT) {
-  throw new Error("Missing CLERK_WEBHOOK_SECRET in .env");
-}
-
 app.post(
   "/clerk-webhook",
   bodyParser.raw({ type: "application/json" }),
@@ -81,7 +69,10 @@ app.post(
     const payload = req.body;
     const headers = req.headers;
 
-    const wh = new Webhook(CLERK_WEBHOOK_SECRETT);
+    const CLERK_WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET!;
+
+    const wh = new Webhook(CLERK_WEBHOOK_SECRET);
+
     let event: { type: string; data: any };
 
     try {
@@ -96,28 +87,30 @@ app.post(
       return;
     }
 
+  
     if (event.type === "user.created") {
       const clerkUser = event.data;
 
       try {
         const newUser = new User({
           clerkId: clerkUser.id,
-          email: clerkUser.email_addresses[0]?.email_address,
+          email: clerkUser.email_addresses[0]?.email_address || "",
           name: `${clerkUser.first_name || ""} ${
             clerkUser.last_name || ""
           }`.trim(),
           profile: clerkUser.image_url || "",
-          source: 'admin'
+          source: "clerk",
         });
 
         await newUser.save();
-        console.log(" User saved:", newUser.email);
+        console.log("New user saved:", newUser.email);
       } catch (err) {
-        console.error(" MongoDB save failed:", err);
+        console.error("MongoDB save failed:", err);
       }
     }
 
     res.status(200).json({ message: "Webhook processed" });
+    return;
   }
 );
 
