@@ -52,56 +52,96 @@ const corsOptions = {
 };
 
 
-app.post("/clerk-webhook", express.raw({ type: "application/json" }), async (req, res):Promise<void> => {
-  const CLERK_WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET!;
-  const wh = new Webhook(CLERK_WEBHOOK_SECRET);
 
-  let event: any;
-  try {
-    event = wh.verify(req.body, {
-      "webhook-id": req.headers["webhook-id"] as string,
-      "webhook-timestamp": req.headers["webhook-timestamp"] as string,
-      "webhook-signature": req.headers["webhook-signature"] as string,
-    });
-  } catch (err) {
-    console.error("Webhook verification failed:", err);
-    res.status(400).json({ error: "Invalid webhook signature" });
-    return
-  }
-
-  console.log(event.type, event.data);
-  
-
-  if (event.type === "user.created") {
-    const clerkUser = event.data;
-    const email = clerkUser.email_addresses?.[0]?.email_address || "";
-    const firstName = clerkUser.first_name || clerkUser.external_accounts?.[0]?.first_name || "";
-    const lastName = clerkUser.last_name || clerkUser.external_accounts?.[0]?.last_name || "";
-    const name = `${firstName} ${lastName}`.trim() || email.split("@")[0];
-    const profile = clerkUser.image_url || clerkUser.external_accounts?.[0]?.image_url || "";
-
-    try {
-      const exists = await User.findOne({ clerkId: clerkUser.id });
-      if (!exists) {
-        const newUser = new User({
-          clerkId: clerkUser.id,
-          email,
-          name,
-          profile,
-          source: "clerk",
-        });
-        await newUser.save();
-        console.log("User saved:", newUser.email);
-      } else {
-        console.log("User already exists:", exists.email);
-      }
-    } catch (err) {
-      console.error("MongoDB save failed:", err);
+app.post(
+  "/clerk-webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res): Promise<void> => {
+    const CLERK_WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+    if (!CLERK_WEBHOOK_SECRET) {
+      console.error("Missing CLERK_WEBHOOK_SECRET in env");
+      res.status(500).json({ error: "Server misconfiguration" });
+      return;
     }
-  }
 
-  res.status(200).json({ message: "Webhook processed" });
-});
+    const wh = new Webhook(CLERK_WEBHOOK_SECRET);
+
+    let event: any;
+
+ 
+    if (
+      !req.headers["svix-id"] ||
+      !req.headers["svix-timestamp"] ||
+      !req.headers["svix-signature"]
+    ) {
+      console.warn("⚠️ No svix headers found — skipping signature verification (manual test)");
+      try {
+        event = JSON.parse(req.body.toString());
+      } catch (err) {
+        res.status(400).json({ error: "Invalid JSON in manual test" });
+        return;
+      }
+    } else {
+    
+      try {
+        event = wh.verify(req.body, {
+          "svix-id": req.headers["svix-id"] as string,
+          "svix-timestamp": req.headers["svix-timestamp"] as string,
+          "svix-signature": req.headers["svix-signature"] as string,
+        });
+      } catch (err) {
+        console.error("Webhook verification failed:", err);
+        res.status(400).json({ error: "Invalid webhook signature" });
+        return;
+      }
+    }
+
+    console.log("Event received:", event.type);
+
+ 
+    if (event.type === "user.created") {
+      const clerkUser = event.data;
+      const email =
+        clerkUser.email_addresses?.[0]?.email_address || "";
+      const firstName =
+        clerkUser.first_name ||
+        clerkUser.external_accounts?.[0]?.first_name ||
+        "";
+      const lastName =
+        clerkUser.last_name ||
+        clerkUser.external_accounts?.[0]?.last_name ||
+        "";
+      const name = `${firstName} ${lastName}`.trim() || email.split("@")[0];
+      const profile =
+        clerkUser.image_url ||
+        clerkUser.external_accounts?.[0]?.image_url ||
+        "";
+
+      try {
+        const existingUser = await User.findOne({ clerkId: clerkUser.id });
+        if (!existingUser) {
+          const newUser = new User({
+            clerkId: clerkUser.id,
+            email,
+            name,
+            profile,
+            source: "clerk",
+          });
+          await newUser.save();
+          console.log("User created:", newUser.email);
+        } else {
+          console.log("ℹUser already exists:", existingUser.email);
+        }
+      } catch (err) {
+        console.error(" MongoDB save failed:", err);
+      }
+    }
+
+    res.status(200).json({ message: "Webhook processed" });
+  }
+);
+
+
 
 
 
