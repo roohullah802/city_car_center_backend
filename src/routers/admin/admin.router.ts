@@ -21,7 +21,9 @@ import {
   transactions,
   updateCar,
   getPendingAdminUsers,
-  getAdminStatus
+  getAdminStatus,
+  adminApprove,
+  adminDisApproved
 } from "../../controllers/admin/admin.controller";
 import { compressAndResize, upload } from "../../lib/multer/multer";
 import { verifyClerkToken } from "../../middleware/verifyClerkToken";
@@ -64,5 +66,7 @@ adminRouter.route("/transactions").get(verifyClerkToken,requireAdmin, transactio
 adminRouter.route("/update-car/:id").patch(verifyClerkToken,requireAdmin, updateCar);
 adminRouter.route('/get-pending-admin-users').get(verifyClerkToken, requireAdmin, getPendingAdminUsers);
 adminRouter.route('/status').get(verifyClerkToken, getAdminStatus);
+adminRouter.route('/approve/:id').post(verifyClerkToken,requireAdmin,adminApprove);
+adminRouter.route('/disApprove/:id').post(verifyClerkToken, requireAdmin, adminDisApproved);
 
 export { adminRouter };

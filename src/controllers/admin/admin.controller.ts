@@ -813,3 +813,53 @@ export const getAdminStatus = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+
+export async function adminApprove(req: Request, res: Response): Promise<void> {
+  try {
+    const {id} = req.params;
+    if (!id) {
+      res.status(401).json({success: false, message:"please provide user ID"})
+      return;
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(401).json({success: false, message:"user not found"})
+      return;
+    }
+
+    user.status = 'approved'
+    user.role = 'admin'
+
+    await user.save()
+    
+  } catch (error) {
+    res.status(500).json({success: false, message:"internal server error"})
+  }
+}
+
+
+export async function adminDisApproved(req: Request, res: Response): Promise<void> {
+  try {
+    const {id} = req.params;
+    if (!id) {
+      res.status(401).json({success: false, message:"please provide user ID"})
+      return;
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(401).json({success: false, message:"user not found"})
+      return;
+    }
+
+    user.status = 'pending'
+    user.role = 'user'
+
+    await user.save()
+    
+  } catch (error) {
+    res.status(500).json({success: false, message:"internal server error"})
+  }
+}
