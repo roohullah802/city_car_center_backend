@@ -61,7 +61,7 @@ app.post(
 
     const wh = new Webhook(CLERK_WEBHOOK_SECRET);
 
-    // Tell TypeScript the type of the event
+  
     type ClerkUserCreatedEvent = {
       type: "user.created";
       data: any;
@@ -104,13 +104,13 @@ app.post(
           email,
           name: `${firstName} ${lastName}`.trim(),
           profile,
-          source: "clerk",
+          source: "admin",
         });
 
         await newUser.save();
-        console.log("✅ New user saved:", newUser.email);
+        console.log("New user saved:", newUser.email);
       } catch (err) {
-        console.error("❌ MongoDB save failed:", err);
+        console.error("MongoDB save failed:", err);
       }
     }
 
