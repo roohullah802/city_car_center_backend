@@ -468,46 +468,71 @@ export async function AllUsers(req: Request, res: Response): Promise<void> {
 }
 
 export async function deleteUser(req: Request, res: Response): Promise<void> {
-  const userid = req.user?._id;
+  const adminId = req.user?._id;
   const { id } = req.params;
+
   try {
-    if (!userid) {
-      res
-        .status(400)
-        .json({ success: false, message: "Unauthorized please login first" });
+  
+    if (!adminId) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized: please login first",
+      });
       return;
     }
+
 
     const deletedUser = await User.findByIdAndDelete(id);
     if (!deletedUser) {
-      res.status(400).json({ success: false, message: "User not found" });
+      res.status(404).json({ success: false, message: "User not found" });
       return;
     }
-    const leasesUser = await Lease.find({ user: deletedUser._id });
-    const carIds = leasesUser.map((lease: any) => lease.car);
 
-    await Car.updateMany(
-      {
-        _id: { $in: carIds },
-      },
-      { $set: { available: true } }
-    );
+ 
+    const leases = await Lease.find({ user: deletedUser._id });
+
+
+    const carIds = leases.map((lease: any) => lease.car).filter(Boolean);
+
+  
+    if (carIds.length > 0) {
+      await Car.updateMany(
+        { _id: { $in: carIds } },
+        { $set: { available: true } }
+      );
+    }
+
+
+    await Lease.deleteMany({ user: deletedUser._id });
+
+
+    await Promise.all([
+      redisClient.del(`AllCars:AllCars`),
+      redisClient.del(`leases:${deletedUser._id}`),
+      redisClient.del(`user:${deletedUser.email}`),
+    ]);
+
 
     req.io.emit("userDeleted", {
       id,
-      message: "Your account has been deleted by admin.",
+      message: "User account has been deleted by admin.",
     });
 
-    await Lease.deleteMany({
-      user: deletedUser._id,
+
+    res.status(200).json({
+      success: true,
+      message: "User and all related data deleted successfully",
     });
-    await redisClient.del(`AllCars:AllCars`);
-    await redisClient.del(`leases:${deletedUser._id}`);
-    await redisClient.del(`user:${deletedUser.email}`);
-  } catch (error) {
-    res.status(500).json({ success: false, message: "internal server error" });
+
+    console.log(` User ${deletedUser.email} and all related data deleted.`);
+  } catch (error: any) {
+    console.error(" Error deleting user:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
 }
+
 
 export async function userDetails(req: Request, res: Response): Promise<void> {
   const userId = req.user?._id
