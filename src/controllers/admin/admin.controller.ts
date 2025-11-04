@@ -806,7 +806,7 @@ export  async function getPendingAdminUsers (req: Request, res: Response):Promis
       res.status(401).json({success: false, message:"Unautorized please login first to access this route"})
       return
     }
-    const users = await User.find({ source: "admin", status: "pending" });
+    const users = await User.find({ source: "admin"});
     res.status(200).json({ success: true, users });
   } catch (error: any) {
     console.log(error);
