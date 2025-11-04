@@ -867,6 +867,8 @@ export async function adminApprove(req: Request, res: Response): Promise<void> {
     user.role = 'admin'
 
     await user.save()
+
+    res.status(200).json({success: true, message:"updated successfully"})
     
   } catch (error) {
     res.status(500).json({success: false, message:"internal server error"})
@@ -892,6 +894,8 @@ export async function adminDisApproved(req: Request, res: Response): Promise<voi
     user.role = 'user'
 
     await user.save()
+
+    res.status(200).json({success: true, message:"updated successfully"})
     
   } catch (error) {
     res.status(500).json({success: false, message:"internal server error"})
