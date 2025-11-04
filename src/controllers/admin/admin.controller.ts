@@ -784,6 +784,8 @@ export  async function getPendingAdminUsers (req: Request, res: Response):Promis
     const users = await User.find({ source: "admin", status: "pending" });
     res.status(200).json({ success: true, users });
   } catch (error: any) {
+    console.log(error);
+    
     res.status(500).json({ success: false, message: error.message });
   }
 };

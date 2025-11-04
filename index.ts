@@ -159,34 +159,6 @@ app.post(
 
 
 
-
-
-
-// app.post("/clerk-webhook", express.raw({ type: "application/json" }), async (req, res) => {
-//   try {
-//     // const evt = wh.verify(req.body, headers); // comment this line
-
-//     const event = JSON.parse(req.body); // parse body manually for now
-//     console.log("Received test event:", event.type, event.data);
-
-//     if (event.type === "user.created") {
-//       // create user logic
-//     }
-
-//     res.status(200).json({ message: "Webhook processed (test mode)" });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Internal error" });
-//   }
-// });
-
-
-
-
-
-
-
-
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());
