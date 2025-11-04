@@ -773,7 +773,7 @@ export async function updateCar(req: Request, res: Response): Promise<void> {
 }
 
 
-export const getPendingAdminUsers = async (req: Request, res: Response) => {
+export  async function getPendingAdminUsers (req: Request, res: Response):Promise<void> {
   try {
     const userId = req.user?._id
     if (!userId) {
