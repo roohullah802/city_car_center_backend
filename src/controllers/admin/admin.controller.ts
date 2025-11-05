@@ -799,7 +799,6 @@ export async function updateCar(req: Request, res: Response): Promise<void> {
 
 export  async function getPendingAdminUsers (req: Request, res: Response):Promise<void> {
   try {
-    console.log('route hit');
     
     const userId = req.user?._id
     if (!userId) {
@@ -809,8 +808,6 @@ export  async function getPendingAdminUsers (req: Request, res: Response):Promis
     const users = await User.find({ source: "admin"});
     res.status(200).json({ success: true, users });
   } catch (error: any) {
-    console.log(error);
-    
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -822,16 +819,15 @@ export  async function getPendingAdminUsers (req: Request, res: Response):Promis
  */
 export const getAdminStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const user = (req as any).user;
+    const id = req.user?._id
 
-    if (!user) {
+    if (!id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
       return;
     }
 
-    const { _id } = user;
 
-    const dbUser = await User.findById(_id);
+    const dbUser = await User.findById(id);
 
     if (!dbUser) {
       res.status(401).json({success: false, message:"user not found"})
