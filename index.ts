@@ -125,7 +125,6 @@ app.post(
             email,
             name,
             profile,
-            source: "admin",
           });
           await newUser.save();
           console.log("User created in MongoDB:", newUser.email);
@@ -137,7 +136,6 @@ app.post(
       }
     }
 
-    // 🔹 USER DELETED
     if (event.type === "user.deleted") {
       const clerkUser = event.data;
       try {

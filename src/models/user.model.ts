@@ -8,8 +8,6 @@ export interface UserDocument extends Document {
   role: string;
   isAdminExist: boolean;
   clerkId: string;
-  status: string;
-  source: string;
 }
 
 
@@ -40,16 +38,6 @@ const userSchema = new Schema<UserDocument>(
       type: Boolean,
       default: false
     },
-    status: {
-      type: String,
-      enum: ['pending', 'approved'],
-      default: 'pending'
-    },
-    source: {
-      type: String,
-      enum: ['admin', 'mobile'],
-      default: 'mobile'
-    }
   },
   {
     timestamps: true,

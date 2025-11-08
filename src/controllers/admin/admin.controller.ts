@@ -806,7 +806,7 @@ export  async function getPendingAdminUsers (req: Request, res: Response):Promis
       res.status(401).json({success: false, message:"Unautorized please login first to access this route"})
       return
     }
-    const users = await User.find({ source: "admin"});
+    const users = await User.find();
     res.status(200).json({ success: true, users });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -837,7 +837,7 @@ export const getAdminStatus = async (req: Request, res: Response): Promise<void>
 
     res.status(200).json({
       success: true,
-      user: { _id: dbUser._id, email: dbUser.email , role: dbUser.role, status: dbUser.status },
+      user: { _id: dbUser._id, email: dbUser.email , role: dbUser.role },
     });
   } catch (error: any) {
     console.error("Error fetching user status:", error);
@@ -860,7 +860,6 @@ export async function adminApprove(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    user.status = 'approved'
     user.role = 'admin'
 
     await user.save()
@@ -887,7 +886,6 @@ export async function adminDisApproved(req: Request, res: Response): Promise<voi
       return;
     }
 
-    user.status = 'pending'
     user.role = 'user'
 
     await user.save()
