@@ -20,7 +20,7 @@ export const requireAdmin = async (
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
-    if (user.role !== "admin" || user.status !== "approved") {
+    if (user.role !== "admin") {
       res
         .status(403)
         .json({ message: "Access denied. Waiting for admin approval." });
