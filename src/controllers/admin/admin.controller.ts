@@ -508,6 +508,7 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
 
     await Promise.all([
       redisClient.del(`AllCars:AllCars`),
+      redisClient.del('AllUsers:AllUsers'),
       redisClient.del(`leases:${deletedUser._id}`),
       redisClient.del(`user:${deletedUser.email}`),
     ]);
