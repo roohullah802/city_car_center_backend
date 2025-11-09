@@ -155,14 +155,6 @@ app.post(
 );
 
 
-
-
-app.use(cors(corsOptions));
-app.use(cookieParser());
-app.use(express.json());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
 const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
   apiVersion: "2025-05-28.basil",
 });
@@ -184,7 +176,7 @@ app.post(
         process.env.STRIPE_WEBHOOK_SECRET as string
       );
     } catch (err: any) {
-      console.error("⚠️ Webhook signature verification failed:", err.message);
+      console.error("Webhook signature verification failed:", err.message);
       res.status(400).json({ success: false, message: "webhook failed" });
       return;
     }
@@ -276,14 +268,14 @@ app.post(
           }
         }
       } catch (err) {
-        console.error("❌ Error handling webhook:", err);
+        console.error("Error handling webhook:", err);
       }
     }
 
     // Handle failed payment
     if (event.type === "payment_intent.payment_failed") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      console.warn("❌ Payment failed for intent:", paymentIntent.id);
+      console.warn("Payment failed for intent:", paymentIntent.id);
 
       res.status(400).json({
         success: false,
@@ -295,6 +287,14 @@ app.post(
     res.json({ received: true });
   }
 );
+
+app.use(cors(corsOptions));
+app.use(cookieParser());
+app.use(express.json());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+
 
 app.use("/api/user/auth", userAuthRouter);
 app.use("/api/user", userRouter);
