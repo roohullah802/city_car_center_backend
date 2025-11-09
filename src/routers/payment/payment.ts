@@ -18,7 +18,6 @@ const stripe = new Stripe(process.env.STRIPE_SERVER_KEY as string, {
 router.post(
   "/create-payment-intent/:id",
   verifyClerkToken,
-  requireAdmin,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = req.user?._id;
@@ -137,7 +136,6 @@ router.post(
 router.post(
   "/create-payment-intent-for-extend-lease/:id",
   verifyClerkToken,
-  requireAdmin,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = req.user?._id;
