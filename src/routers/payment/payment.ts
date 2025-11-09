@@ -112,10 +112,10 @@ router.post(
         metadata: {
           action: "createLease",
           email: req.user?.email!,
-          userId,
-          carId,
-          startDate,
-          endDate,
+          userId: String(userId),
+          carId: String(carId),
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
         },
       });
 
@@ -127,7 +127,6 @@ router.post(
       });
     } catch (error: any) {
       console.log(error);
-
       res.status(400).json({ success: false, message: error.message });
     }
   }
@@ -195,8 +194,8 @@ router.post(
         metadata: {
           action: "extendLease",
           email: req.user?.email || "",
-          userId,
-          leaseId,
+          userId: String(userId),
+          leaseId: String(leaseId),
           carId: car._id.toString(),
           additionalDays: additionalDays.toString(),
           endDate: newEndDate.toISOString(),
