@@ -686,7 +686,9 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
 // POST /api/verify-token
 export async function verifyToken (req: Request, res: Response):Promise<void> {
   try {
-    const user = (req as any).user;
+    const userId = (req as any).user._id;
+
+    const user = await User.findById(userId);
 
     if (!user) {
       res.status(404).json({
@@ -695,6 +697,7 @@ export async function verifyToken (req: Request, res: Response):Promise<void> {
       });
       return;
     }
+
 
      res.json({
       success: true,
