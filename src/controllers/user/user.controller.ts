@@ -8,8 +8,8 @@ import { redisClient } from "../../lib/redis/redis";
 import { Faq } from "../../models/faqs.model";
 import { Policy } from "../../models/policy.model";
 import { IssueReport } from "../../models/report.model";
-import { emailQueue } from "../../lib/mail/emailQueues";
-
+import jwt from 'jsonwebtoken'
+import { User } from "../../models/user.model";
 /**
  * @route   POST /api/cars/details
  * @desc    Get details of a single car, including its reviews
@@ -681,4 +681,28 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
   }
 }
 
+
+
+// POST /api/verify-token
+export async function verifyToken (req: Request, res: Response):Promise<void> {
+  try {
+    const user = (req as any).user;
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+      return;
+    }
+
+     res.json({
+      success: true,
+      user,
+    });
+    
+  } catch (error) {
+    res.status(500).json({success: false, message:"interval server error"})
+  }
+}
 

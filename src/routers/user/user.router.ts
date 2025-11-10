@@ -11,6 +11,7 @@ import {
   getAllActiveLeases,
   leaseDetails,
   getAllLeases,
+  verifyToken
 } from "../../controllers/user/user.controller";
 import uploadPDF from "../../lib/multer/pdf.multer";
 import { verifyClerkToken } from "../../middleware/verifyClerkToken";
@@ -36,5 +37,8 @@ userRouter.route("/leases").get(verifyClerkToken, getAllLeases);
 userRouter
   .route("/lease/details/:id")
   .get(verifyClerkToken, leaseDetails);
+
+userRouter.route("/verify-token").post(verifyClerkToken, verifyToken);
+
 
 export { userRouter };

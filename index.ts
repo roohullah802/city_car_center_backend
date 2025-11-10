@@ -321,12 +321,12 @@ async function init() {
         }
       );
 
-      console.log("✅ Lease reminder job scheduled (hourly)");
+      console.log("Lease reminder job scheduled (hourly)");
     } else {
-      console.log("⏳ Lease reminder job already exists");
+      console.log("Lease reminder job already exists");
     }
   } catch (err) {
-    console.error("❌ Failed to schedule lease reminder job:", err);
+    console.error("Failed to schedule lease reminder job:", err);
   }
 }
 
