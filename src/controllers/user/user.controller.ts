@@ -679,7 +679,10 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function uploadDocuments(req: Request, res: Response): Promise<void> {
+export async function uploadDocuments(
+  req: Request,
+  res: Response
+): Promise<void> {
   const userId = req.user?._id;
 
   try {
@@ -688,17 +691,20 @@ export async function uploadDocuments(req: Request, res: Response): Promise<void
       return;
     }
 
-
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-    const BASE_URL = "https://api.citycarcenters.com/uploads/";
+    if (!files) {
+      res.status(400).json({ success: false, message: "files not uploaded" });
+      return;
+    }
 
- 
+    const BASE_URL = "https://api.citycarcenters.com/uploads/";
 
     const updateData: any = {};
 
     if (files["drivingLicence"]?.[0]) {
-      updateData.drivingLicence = BASE_URL + files["drivingLicence"][0].filename;
+      updateData.drivingLicence =
+        BASE_URL + files["drivingLicence"][0].filename;
     }
 
     if (files["cnicFront"]?.[0]) {
@@ -710,10 +716,11 @@ export async function uploadDocuments(req: Request, res: Response): Promise<void
     }
 
     if (files["extraDocuments"]) {
-      updateData.extraDocuments = files["extraDocuments"].map((file) => BASE_URL + file.filename);
+      updateData.extraDocuments = files["extraDocuments"].map(
+        (file) => BASE_URL + file.filename
+      );
     }
 
- 
     updateData.documentStatus = "notVerified";
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -732,7 +739,6 @@ export async function uploadDocuments(req: Request, res: Response): Promise<void
       message: "Documents uploaded successfully",
       data: updatedUser,
     });
-
   } catch (error) {
     console.error("UPLOAD ERROR:", error);
     res.status(500).json({
