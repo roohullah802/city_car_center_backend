@@ -15,7 +15,7 @@ import {
 } from "../../controllers/user/user.controller";
 import uploadPDF from "../../lib/multer/pdf.multer";
 import { verifyClerkToken } from "../../middleware/verifyClerkToken";
-import { upload } from "../../lib/multer/multer";
+import { compressAndResize, upload } from "../../lib/multer/multer";
 
 const userRouter = express.Router();
 
@@ -43,6 +43,6 @@ userRouter.route('/upload/documents').post(verifyClerkToken,upload.fields([{name
   {name: 'cnicFront', maxCount: 1},
   {name: 'cnicBack', maxCount: 1},
   {name: 'extraDocuments', maxCount: 10}
-]), uploadDocuments)  
+]),compressAndResize, uploadDocuments)  
 
 export { userRouter };
