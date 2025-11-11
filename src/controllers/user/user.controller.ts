@@ -692,6 +692,8 @@ export async function uploadDocuments(
     }
 
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    console.log(files);
+    
 
     if (!files) {
       res.status(400).json({ success: false, message: "files not uploaded" });
