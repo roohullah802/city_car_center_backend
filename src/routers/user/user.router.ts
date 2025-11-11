@@ -11,7 +11,8 @@ import {
   getAllActiveLeases,
   leaseDetails,
   getAllLeases,
-  uploadDocuments
+  uploadDocuments,
+  documentStatus
 } from "../../controllers/user/user.controller";
 import uploadPDF from "../../lib/multer/pdf.multer";
 import { verifyClerkToken } from "../../middleware/verifyClerkToken";
@@ -43,6 +44,8 @@ userRouter.route('/upload/documents').post(verifyClerkToken,upload.fields([{name
   {name: 'cnicFront', maxCount: 1},
   {name: 'cnicBack', maxCount: 1},
   {name: 'extraDocuments', maxCount: 10}
-]),compressAndResize, uploadDocuments)  
+]),compressAndResize, uploadDocuments);
+
+userRouter.route('/documents/status').get(verifyClerkToken, documentStatus);
 
 export { userRouter };

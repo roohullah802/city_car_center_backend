@@ -749,3 +749,19 @@ export async function uploadDocuments(
     });
   }
 }
+
+export async function documentStatus(req: Request, res: Response): Promise<void>{
+  const userId = req.user?._id;
+  try {
+    const user = User.findById(userId);
+    if (!user) {
+      res.status(401).json({success: false, message:"user not found"})
+      return;
+    }
+
+    res.status(200).json({success: true, user})
+    
+  } catch (error) {
+    res.status(500).json({success: false, message:"internal server error"})
+  }
+}
