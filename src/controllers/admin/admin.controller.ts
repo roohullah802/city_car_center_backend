@@ -12,7 +12,6 @@ import path from "path";
 import { IssueReport } from "../../models/report.model";
 import { createUpdateCarSchema } from "../../lib/zod/zod.update.car";
 
-
 export async function carListing(req: Request, res: Response): Promise<void> {
   const parsed = createCarSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -79,11 +78,6 @@ export async function carListing(req: Request, res: Response): Promise<void> {
   });
 
   await redisClient.del(`AllCars:AllCars`);
-  res.status(200).json({
-    success: true,
-    message: "Car registered successfully",
-    car: JSON.parse(JSON.stringify(car)),
-  });
   const brands = await Car.aggregate([
     {
       $group: {
@@ -102,6 +96,11 @@ export async function carListing(req: Request, res: Response): Promise<void> {
   req.io.emit("brandAdded", brands);
   req.io.emit("carAdded", car);
   await redisClient.setEx("AllBrands:AllBrands", 86400, JSON.stringify(brands));
+  res.status(200).json({
+    success: true,
+    message: "Car registered successfully",
+    car: JSON.parse(JSON.stringify(car)),
+  });
 }
 
 /**
@@ -472,7 +471,6 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
 
   try {
-  
     if (!adminId) {
       res.status(401).json({
         success: false,
@@ -481,20 +479,16 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
       return;
     }
 
-
     const deletedUser = await User.findByIdAndDelete(id);
     if (!deletedUser) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
     }
 
- 
     const leases = await Lease.find({ user: deletedUser._id });
-
 
     const carIds = leases.map((lease: any) => lease.car).filter(Boolean);
 
-  
     if (carIds.length > 0) {
       await Car.updateMany(
         { _id: { $in: carIds } },
@@ -502,23 +496,19 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
       );
     }
 
-
     await Lease.deleteMany({ user: deletedUser._id });
-
 
     await Promise.all([
       redisClient.del(`AllCars:AllCars`),
-      redisClient.del('AllUsers:AllUsers'),
+      redisClient.del("AllUsers:AllUsers"),
       redisClient.del(`leases:${deletedUser._id}`),
       redisClient.del(`user:${deletedUser.email}`),
     ]);
-
 
     req.io.emit("userDeleted", {
       id,
       message: "User account has been deleted by admin.",
     });
-
 
     res.status(200).json({
       success: true,
@@ -528,15 +518,12 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
     console.log(` User ${deletedUser.email} and all related data deleted.`);
   } catch (error: any) {
     console.error(" Error deleting user:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
 
-
 export async function userDetails(req: Request, res: Response): Promise<void> {
-  const userId = req.user?._id
+  const userId = req.user?._id;
   const { id } = req.params;
   try {
     if (!userId) {
@@ -584,7 +571,7 @@ export async function userDetails(req: Request, res: Response): Promise<void> {
     });
   } catch (error) {
     console.log(error);
-    
+
     res.status(500).json({ success: false, message: "internal server error" });
   }
 }
@@ -754,9 +741,8 @@ export async function transactions(req: Request, res: Response): Promise<void> {
 
 export async function updateCar(req: Request, res: Response): Promise<void> {
   const userId = req.user?._id;
-  const {id} = req.params;
+  const { id } = req.params;
   try {
-    
     const parsed = createUpdateCarSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({
@@ -773,8 +759,11 @@ export async function updateCar(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    
-    const updatedCar = await Car.findByIdAndUpdate(id, { $set: parsed.data },{new: true});
+    const updatedCar = await Car.findByIdAndUpdate(
+      id,
+      { $set: parsed.data },
+      { new: true }
+    );
 
     if (!updatedCar) {
       res.status(400).json({ success: false, message: "Car updation failed" });
@@ -785,59 +774,62 @@ export async function updateCar(req: Request, res: Response): Promise<void> {
       .status(200)
       .json({ success: true, message: "Car updated successfully", updatedCar });
 
-    req.io.emit('carUpdated', updatedCar);
+    req.io.emit("carUpdated", updatedCar);
     await redisClient.del(`AllCars:AllCars`);
-    await redisClient.del(`carDetails:${id}`);  
-
-
-
+    await redisClient.del(`carDetails:${id}`);
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
 
-
-export  async function getPendingAdminUsers (req: Request, res: Response):Promise<void> {
+export async function getPendingAdminUsers(
+  req: Request,
+  res: Response
+): Promise<void> {
   try {
-    
-    const userId = req.user?._id
+    const userId = req.user?._id;
     if (!userId) {
-      res.status(401).json({success: false, message:"Unautorized please login first to access this route"})
-      return
+      res
+        .status(401)
+        .json({
+          success: false,
+          message: "Unautorized please login first to access this route",
+        });
+      return;
     }
     const users = await User.find();
     res.status(200).json({ success: true, users });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
-};
-
-
+}
 
 /**
  * Returns the current user's email, _id, role, and status
  */
-export const getAdminStatus = async (req: Request, res: Response): Promise<void> => {
+export const getAdminStatus = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const id = req.user?._id
+    const id = req.user?._id;
 
     if (!id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
       return;
     }
 
-
     const dbUser = await User.findById(id);
 
     if (!dbUser) {
-      res.status(401).json({success: false, message:"user not found"})
-      return
+      res.status(401).json({ success: false, message: "user not found" });
+      return;
     }
 
     res.status(200).json({
       success: true,
-      user: { _id: dbUser._id, email: dbUser.email , role: dbUser.role },
+      user: { _id: dbUser._id, email: dbUser.email, role: dbUser.role },
     });
   } catch (error: any) {
     console.error("Error fetching user status:", error);
@@ -845,54 +837,57 @@ export const getAdminStatus = async (req: Request, res: Response): Promise<void>
   }
 };
 
-
 export async function adminApprove(req: Request, res: Response): Promise<void> {
   try {
-    const {id} = req.params;
+    const { id } = req.params;
     if (!id) {
-      res.status(401).json({success: false, message:"please provide user ID"})
+      res
+        .status(401)
+        .json({ success: false, message: "please provide user ID" });
       return;
     }
 
     const user = await User.findById(id);
     if (!user) {
-      res.status(401).json({success: false, message:"user not found"})
+      res.status(401).json({ success: false, message: "user not found" });
       return;
     }
 
-    user.role = 'admin'
+    user.role = "admin";
 
-    await user.save()
+    await user.save();
 
-    res.status(200).json({success: true, message:"updated successfully"})
-    
+    res.status(200).json({ success: true, message: "updated successfully" });
   } catch (error) {
-    res.status(500).json({success: false, message:"internal server error"})
+    res.status(500).json({ success: false, message: "internal server error" });
   }
 }
 
-
-export async function adminDisApproved(req: Request, res: Response): Promise<void> {
+export async function adminDisApproved(
+  req: Request,
+  res: Response
+): Promise<void> {
   try {
-    const {id} = req.params;
+    const { id } = req.params;
     if (!id) {
-      res.status(401).json({success: false, message:"please provide user ID"})
+      res
+        .status(401)
+        .json({ success: false, message: "please provide user ID" });
       return;
     }
 
     const user = await User.findById(id);
     if (!user) {
-      res.status(401).json({success: false, message:"user not found"})
+      res.status(401).json({ success: false, message: "user not found" });
       return;
     }
 
-    user.role = 'user'
+    user.role = "user";
 
-    await user.save()
+    await user.save();
 
-    res.status(200).json({success: true, message:"updated successfully"})
-    
+    res.status(200).json({ success: true, message: "updated successfully" });
   } catch (error) {
-    res.status(500).json({success: false, message:"internal server error"})
+    res.status(500).json({ success: false, message: "internal server error" });
   }
 }

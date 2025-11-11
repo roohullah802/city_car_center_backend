@@ -8,8 +8,8 @@ import { redisClient } from "../../lib/redis/redis";
 import { Faq } from "../../models/faqs.model";
 import { Policy } from "../../models/policy.model";
 import { IssueReport } from "../../models/report.model";
-import jwt from 'jsonwebtoken'
 import { User } from "../../models/user.model";
+
 /**
  * @route   POST /api/cars/details
  * @desc    Get details of a single car, including its reviews
@@ -225,9 +225,11 @@ export async function getPaymentDetails(
       await redisClient.expire(key, 86400);
     }
 
-    const totalPaid = leases.filter((l) => l.status === "active" && l.status === 'expired').length;
+    const totalPaid = leases.filter(
+      (l) => l.status === "active" && l.status === "expired"
+    ).length;
     const totalAmountPaid = leases
-      .filter((l) => l.status === "active" && l.status === 'expired')
+      .filter((l) => l.status === "active" && l.status === "expired")
       .reduce((sum, l) => sum + (l.totalAmount || 0), 0);
 
     res.status(200).json({
@@ -639,22 +641,19 @@ export async function getAllActiveLeases(
   }
 }
 
-
-
-
 export async function getAllLeases(req: Request, res: Response): Promise<void> {
   const userId = req.user?._id;
   try {
     const redisLease = await redisClient.get(`leases:${userId}`);
-   
+
     if (redisLease) {
-     const leases = JSON.parse(redisLease);
-      res.status(200).json({success: true, leases});
+      const leases = JSON.parse(redisLease);
+      res.status(200).json({ success: true, leases });
       return;
     }
-     const leases = await Lease.aggregate([
+    const leases = await Lease.aggregate([
       {
-        $match: {user: new mongoose.Types.ObjectId(userId)},
+        $match: { user: new mongoose.Types.ObjectId(userId) },
       },
       {
         $lookup: {
@@ -667,13 +666,12 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
     ]);
 
     if (!leases || leases.length < 1) {
-      res.status(400).json({success: false, message:"leases not found"})
-      return
+      res.status(400).json({ success: false, message: "leases not found" });
+      return;
     }
     await redisClient.setEx(`leases:${userId}`, 7200, JSON.stringify(leases));
 
-    res.status(200).json({success: true, leases})
-    
+    res.status(200).json({ success: true, leases });
   } catch (error: any) {
     res
       .status(500)
@@ -681,31 +679,65 @@ export async function getAllLeases(req: Request, res: Response): Promise<void> {
   }
 }
 
+export async function uploadDocuments(req: Request, res: Response): Promise<void> {
+  const userId = req.user?._id;
 
-
-// POST /api/verify-token
-export async function verifyToken (req: Request, res: Response):Promise<void> {
   try {
-    const userId = (req as any).user._id;
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
       return;
     }
 
 
-     res.json({
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+    const BASE_URL = "https://api.citycarcenters.com/uploads/";
+
+ 
+
+    const updateData: any = {};
+
+    if (files["drivingLicence"]?.[0]) {
+      updateData.drivingLicence = BASE_URL + files["drivingLicence"][0].filename;
+    }
+
+    if (files["cnicFront"]?.[0]) {
+      updateData.cnicFront = BASE_URL + files["cnicFront"][0].filename;
+    }
+
+    if (files["cnicBack"]?.[0]) {
+      updateData.cnicBack = BASE_URL + files["cnicBack"][0].filename;
+    }
+
+    if (files["extraDocuments"]) {
+      updateData.extraDocuments = files["extraDocuments"].map((file) => BASE_URL + file.filename);
+    }
+
+ 
+    updateData.documentStatus = "notVerified";
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({
       success: true,
-      user,
+      message: "Documents uploaded successfully",
+      data: updatedUser,
     });
-    
+
   } catch (error) {
-    res.status(500).json({success: false, message:"interval server error"})
+    console.error("UPLOAD ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 }
-

@@ -1,9 +1,14 @@
+import { kStringMaxLength } from "buffer";
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface UserDocument extends Document {
  name: string;
   email: string;
   drivingLicence: string;
+  cnicFront: string;
+  cnicBack: string;
+  extraDocuments: [];
+  documentStatus: string;
   profile: string;
   role: string;
   isAdminExist: boolean;
@@ -38,6 +43,21 @@ const userSchema = new Schema<UserDocument>(
       type: Boolean,
       default: false
     },
+    documentStatus: {
+      type: String,
+      enum: ['notVerified', 'verified', 'rejected'],
+      default: 'notVerified'
+    },
+    cnicFront: {
+      type: String
+    },
+    cnicBack: {
+      type: String
+    },
+    extraDocuments:{
+      type: [String],
+      default: []
+    }
   },
   {
     timestamps: true,

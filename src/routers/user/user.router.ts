@@ -11,10 +11,11 @@ import {
   getAllActiveLeases,
   leaseDetails,
   getAllLeases,
-  verifyToken
+  uploadDocuments
 } from "../../controllers/user/user.controller";
 import uploadPDF from "../../lib/multer/pdf.multer";
 import { verifyClerkToken } from "../../middleware/verifyClerkToken";
+import { upload } from "../../lib/multer/multer";
 
 const userRouter = express.Router();
 
@@ -38,7 +39,10 @@ userRouter
   .route("/lease/details/:id")
   .get(verifyClerkToken, leaseDetails);
 
-userRouter.route("/verify-token").post(verifyClerkToken, verifyToken);
-
+userRouter.route('/upload/documents').post(verifyClerkToken,upload.fields([{name: 'drivingLicence', maxCount:1},
+  {name: 'cnicFront', maxCount: 1},
+  {name: 'cnicBack', maxCount: 1},
+  {name: 'extraDocuments', maxCount: 10}
+]), uploadDocuments)  
 
 export { userRouter };
