@@ -755,7 +755,7 @@ export async function documentStatus(
 ): Promise<void> {
   const userId = req.user?._id;
   try {
-    const user = User.findById(userId);
+    const user = await User.findById(userId);
     if (!user) {
       res.status(401).json({ success: false, message: "user not found" });
       return;
