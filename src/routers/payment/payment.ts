@@ -163,6 +163,10 @@ router.post(
         res.status(404).json({ success: false, message: "Lease not found." });
         return;
       }
+      console.log('user ID ==> ', userId);
+      console.log('user ID in lease ==> ', lease.user);
+      
+      
 
       if (lease.user.toString() !== userId) {
         res.status(403).json({
