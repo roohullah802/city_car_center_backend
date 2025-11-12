@@ -168,7 +168,7 @@ router.post(
       
       
 
-      if (lease.user.toString() !== userId) {
+      if (lease.user.toString() !== userId.toString()) {
         res.status(403).json({
           success: false,
           message: "Unauthorized to modify this lease.",
