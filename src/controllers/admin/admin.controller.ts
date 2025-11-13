@@ -959,7 +959,6 @@ export async function adminApproveDocuments(req: Request, res: Response): Promis
 
     res.status(200).json({ success: true, message: "updated successfully" });
   } catch (error) {
-    console.log(error);
     res.status(500).json({ success: false, message: "internal server error" });
   }
 }
