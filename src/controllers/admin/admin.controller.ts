@@ -790,12 +790,10 @@ export async function getPendingAdminUsers(
   try {
     const userId = req.user?._id;
     if (!userId) {
-      res
-        .status(401)
-        .json({
-          success: false,
-          message: "Unautorized please login first to access this route",
-        });
+      res.status(401).json({
+        success: false,
+        message: "Unautorized please login first to access this route",
+      });
       return;
     }
     const users = await User.find();
@@ -891,3 +889,108 @@ export async function adminDisApproved(
     res.status(500).json({ success: false, message: "internal server error" });
   }
 }
+
+export async function userDocuments(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const userId = req.user?._id;
+  try {
+    if (!userId) {
+      res.status(400).json({
+        success: false,
+        message: "Unauthorized for access this route!",
+      });
+      return;
+    }
+
+    const user = await User.find({ role: "user" });
+    if (!user || user.length === 0) {
+      res.status(401).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    const documents = user.map((usr) => ({
+      id: usr._id,
+      name: usr.name,
+      email: usr.email,
+      documentStatus: usr.documentStatus,
+      images: [
+        usr.cnicFront,
+        usr.cnicBack,
+        usr.drivingLicence,
+        ...usr.extraDocuments,
+      ].filter(Boolean),
+    }));
+
+    if (!documents) {
+      res
+        .status(401)
+        .json({ success: false, message: "no user documents found" });
+      return;
+    }
+
+    res.status(200).json({ success: true, documents });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "internal server error" });
+  }
+}
+
+
+export async function adminApproveDocuments(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      res
+        .status(401)
+        .json({ success: false, message: "please provide user ID" });
+      return;
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(401).json({ success: false, message: "user not found" });
+      return;
+    }
+
+    user.documentStatus = "verified";
+
+    await user.save();
+
+    res.status(200).json({ success: true, message: "updated successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "internal server error" });
+  }
+}
+
+
+
+export async function adminRejectDocuments(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      res
+        .status(401)
+        .json({ success: false, message: "please provide user ID" });
+      return;
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(401).json({ success: false, message: "user not found" });
+      return;
+    }
+
+    user.documentStatus = "rejected";
+
+    await user.save();
+
+    res.status(200).json({ success: true, message: "updated successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "internal server error" });
+  }
+}
+

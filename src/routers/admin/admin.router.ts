@@ -23,7 +23,10 @@ import {
   getPendingAdminUsers,
   getAdminStatus,
   adminApprove,
-  adminDisApproved
+  adminDisApproved,
+  userDocuments,
+  adminApproveDocuments,
+  adminRejectDocuments
 } from "../../controllers/admin/admin.controller";
 import { compressAndResize, upload } from "../../lib/multer/multer";
 import { verifyClerkToken } from "../../middleware/verifyClerkToken";
@@ -68,5 +71,8 @@ adminRouter.route('/get-pending-admin-users').get(verifyClerkToken, requireAdmin
 adminRouter.route('/status').get(verifyClerkToken, getAdminStatus);
 adminRouter.route('/approve/:id').post(verifyClerkToken,requireAdmin,adminApprove);
 adminRouter.route('/disApprove/:id').post(verifyClerkToken, requireAdmin, adminDisApproved);
+adminRouter.route('/user/documents').get(verifyClerkToken,requireAdmin, userDocuments);
+adminRouter.route('/approve/documents/:id').post(verifyClerkToken, requireAdmin, adminApproveDocuments);
+adminRouter.route('/reject/documents/:id').post(verifyClerkToken, requireAdmin, adminRejectDocuments);
 
 export { adminRouter };
